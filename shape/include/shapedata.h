@@ -13,7 +13,7 @@ public:
     }
 
     const int indices_size() const{
-        return index_num * sizeof(GLshort);
+        return index_num * sizeof(GLushort);
     }
 
     void release(){
@@ -24,7 +24,7 @@ public:
     }
 public:
     Vertex* vertices;
-    GLshort* indices;
+    GLushort* indices;
     int vertex_num;
     int index_num;
 };

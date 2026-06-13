@@ -11,8 +11,13 @@ public:
     glm::mat4 getWorldToViewMartix() const{
         return glm::lookAt(position, position + viewDirection, upDirection);
     }
-
+public:
+    //鼠标移动视角相关
     void mousePositionUpdated(const glm::vec2& newMousePosition);
+    //键盘移动相机位置
+    void moveForward(float amount);
+    void moveRight(float amount);
+    void moveUp(float amount);
 private:
     glm::vec3 position;
     glm::vec3 viewDirection;

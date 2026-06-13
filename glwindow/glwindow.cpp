@@ -15,6 +15,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <QMouseEvent>
+#include <QKeyEvent>
 
 using glm::mat4;
 
@@ -25,6 +26,7 @@ GLWindow::GLWindow(QWidget* parent)
     format.setVersion(3, 3);
     format.setProfile(QSurfaceFormat::CoreProfile);
     setFormat(format);
+    setFocusPolicy(Qt::StrongFocus);
 }
 
 bool GLWindow::checkStatus(GLuint objectId,
@@ -62,7 +64,8 @@ bool GLWindow::checkShaderLink(GLuint programId){
 
 void GLWindow::sendDataToOpengl(){
 
-    ShapeData shape =  ShapeGenerator::createCube();
+    ShapeData shape =  ShapeGenerator::createArrow();
+    indexCount_ = shape.index_num;
     //在gpu上申请一个 vao，vertex array object ，句柄放到vaoid。
     glGenVertexArrays(1, &vaoId_);
     //激活这个vao，之后对vbo，顶点属性的操作都会写进这个vao
@@ -169,6 +172,33 @@ void GLWindow::updateFullTransformMartix(){
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4)*2, fullTransformMartices);
 }
 
+void GLWindow::keyPressEvent(QKeyEvent *event){
+    float amount = 0.1f;
+    switch (event->key()) {
+        case Qt::Key_W:
+            camera_.moveForward(amount);
+            break;
+        case Qt::Key_S:
+            camera_.moveForward(-amount);
+            break;
+        case Qt::Key_A:
+            camera_.moveRight(-amount);
+            break;
+        case Qt::Key_D:
+            camera_.moveRight(amount);
+            break;
+        case Qt::Key_Q:
+            camera_.moveUp(amount);
+            break;
+        case Qt::Key_E:
+            camera_.moveUp(-amount);
+            break;
+        default:
+            break;
+    };
+    update();
+}
+
 void GLWindow::initializeGL(){
     // OpenGL 函数 只能在 initializeGL() 之后 调用。构造函数里 GPU 还没准备好，一调 glEnable 就可能 段错误
     initializeOpenGLFunctions();
@@ -273,7 +303,7 @@ void GLWindow::paintGL()
     // glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, nullptr);
 
     updateFullTransformMartix();
-    glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, nullptr, 2);
+    glDrawElementsInstanced(GL_TRIANGLES, indexCount_, GL_UNSIGNED_SHORT, nullptr, 2);
 
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {

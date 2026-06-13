@@ -6,6 +6,10 @@
 #include <QOpenGLFunctions_3_3_Core>
 
 #include <camera.h>
+
+class QKeyEvent;
+class QMouseEvent;
+
 class GLWindow : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
 {
     Q_OBJECT
@@ -22,15 +26,14 @@ protected:
     void initializeGL() override;
     void resizeGL(int w, int h) override;
     void paintGL() override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
     void sendDataToOpengl();
     void sendAnotherTriangle();
     ~GLWindow();
 
-public:
-    void mouseMoveEvent(QMouseEvent* event) override;
-    void updateFullTransformMartix();
-
 private:
+    void updateFullTransformMartix();
     void installShaders();
     QString readShaderCode(const QString& path);
 
@@ -40,6 +43,7 @@ private:
     GLuint indexBufferId_ = 0;
     GLuint offsetBufferId_ = 0;
     GLuint fullTransformMartixBufferId_ = 0;
+    GLsizei indexCount_ = 0;
 private:
     const float per_step = 0.1f;
     int triangle_num = 0;

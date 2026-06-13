@@ -14,14 +14,14 @@ Camera::~Camera()
 void Camera::mousePositionUpdated(const glm::vec2& newMousePosition){
     glm::vec2 mouseDelta = newMousePosition - oldMousePosition;
 
-    if(mouseDelta.x >= 10.0f){
+    if(isFirstMouse){
         oldMousePosition = newMousePosition;
+        isFirstMouse = false;
         return;
     }
 
-
-    if(isFirstMouse){
-        isFirstMouse = false;
+    if(mouseDelta.x >= 10.0f){
+        oldMousePosition = newMousePosition;
         return;
     }
     
@@ -32,7 +32,6 @@ void Camera::mousePositionUpdated(const glm::vec2& newMousePosition){
      glm::vec3(0.0f,1.0f,0.0f));
 
     viewDirection = glm::vec3(rotate *glm::vec4(viewDirection,0.0f));
-    viewDirection = glm::normalize(viewDirection);
     
     //相机上下转动视角,绕相机当前的right方向旋转。也就是pitch，抬头低头
     float angleAroundRight = -mouseDelta.y * sensitivity;
@@ -40,7 +39,7 @@ void Camera::mousePositionUpdated(const glm::vec2& newMousePosition){
     //用“看的方向”和“头顶方向”叉乘，算出相机的右方向。
     //叉乘 cross(a, b) 的作用是：
     // 给两个方向 a 和 b，算出一个同时垂直于它们的新方向。
-    glm::vec3 rightDirection = glm::cross(viewDirection, upDirection);
+    glm::vec3 rightDirection = glm::normalize(glm::cross(viewDirection, upDirection));
 
     glm::mat4 pitch = glm::rotate(glm::mat4(1.0f),
         angleAroundRight, 
@@ -50,4 +49,17 @@ void Camera::mousePositionUpdated(const glm::vec2& newMousePosition){
     viewDirection = glm::normalize(viewDirection);
 
     oldMousePosition = newMousePosition;
+}
+
+void Camera::moveForward(float amount){
+    position += viewDirection * amount;
+}
+
+void Camera::moveRight(float amount){
+    glm::vec3 rightDirection = glm::normalize(glm::cross(viewDirection,upDirection));
+    position += rightDirection * amount;
+}
+
+void Camera::moveUp(float amount){
+    position += upDirection * amount;
 }
