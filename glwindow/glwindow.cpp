@@ -14,6 +14,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <QMouseEvent>
+
 using glm::mat4;
 
 GLWindow::GLWindow(QWidget* parent)
@@ -87,18 +89,9 @@ void GLWindow::sendDataToOpengl(){
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferId_);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, shape.indices_size(), shape.indices, GL_STATIC_DRAW);
 
-
-    mat4 projectMartix = glm::perspective(glm::radians(90.0f),(float)width()/height(),0.1f,10.0f);
-    mat4 worldToViewMartix = camera_.getWorldToViewMartix();
-
-    mat4 fullTransformMartices[] = {
-        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(-1.0f,0.0f,-3.0f))*glm::rotate(mat4(1.0f),glm::radians(36.0f),glm::vec3(1.0f,0.0f,0.0f)),
-        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(1.0f,0.0f,-3.75f))*glm::rotate(mat4(1.0f),glm::radians(126.0f),glm::vec3(0.0f,1.0f,0.0f)),
-    };
-
     glGenBuffers(1, &fullTransformMartixBufferId_);
     glBindBuffer(GL_ARRAY_BUFFER, fullTransformMartixBufferId_);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(fullTransformMartices), fullTransformMartices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4)*2, nullptr, GL_DYNAMIC_DRAW);
 
     // glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*0));
     // glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*4));
@@ -158,6 +151,24 @@ void GLWindow::sendAnotherTriangle(){
     triangle_num++;
 }
 
+void GLWindow::mouseMoveEvent(QMouseEvent *event){
+    glm::vec2 mousePosition = glm::vec2(event->x(), event->y());
+    camera_.mousePositionUpdated(mousePosition);
+    update();
+}
+
+void GLWindow::updateFullTransformMartix(){
+    mat4 projectMartix = glm::perspective(glm::radians(90.0f),(float)width()/height(),0.1f,10.0f);
+    mat4 worldToViewMartix = camera_.getWorldToViewMartix();
+
+    mat4 fullTransformMartices[] = {
+        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(-1.0f,0.0f,-3.0f))*glm::rotate(mat4(1.0f),glm::radians(36.0f),glm::vec3(1.0f,0.0f,0.0f)),
+        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(1.0f,0.0f,-3.75f))*glm::rotate(mat4(1.0f),glm::radians(126.0f),glm::vec3(0.0f,1.0f,0.0f)),
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, fullTransformMartixBufferId_);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4)*2, fullTransformMartices);
+}
+
 void GLWindow::initializeGL(){
     // OpenGL 函数 只能在 initializeGL() 之后 调用。构造函数里 GPU 还没准备好，一调 glEnable 就可能 段错误
     initializeOpenGLFunctions();
@@ -207,6 +218,8 @@ void GLWindow::initializeGL(){
     // glBindVertexArray(0);
     // glBindBuffer(GL_ARRAY_BUFFER, 0);
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    updateFullTransformMartix();
     
     update(); // 触发首帧 paintGL（静态立方体也要重绘一次）
 }
@@ -258,6 +271,8 @@ void GLWindow::paintGL()
     // glUniformMatrix4fv(fullTransformMartixLocation, 1, GL_FALSE, &fullTransformMartix[0][0]);
 
     // glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, nullptr);
+
+    updateFullTransformMartix();
     glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, nullptr, 2);
 
     GLenum err = glGetError();

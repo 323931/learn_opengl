@@ -23,9 +23,13 @@ protected:
     void resizeGL(int w, int h) override;
     void paintGL() override;
     void sendDataToOpengl();
-public:
     void sendAnotherTriangle();
     ~GLWindow();
+
+public:
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void updateFullTransformMartix();
+
 private:
     void installShaders();
     QString readShaderCode(const QString& path);
