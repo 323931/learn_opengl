@@ -5,6 +5,7 @@
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions_3_3_Core>
 
+#include <camera.h>
 class GLWindow : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
 {
     Q_OBJECT
@@ -41,4 +42,7 @@ private:
     int vertex_num_per_triangle = 3;
     int float_num_per_vertex = 6;
     int byte_size_per_triangle = vertex_num_per_triangle*float_num_per_vertex*sizeof(float);
+
+private:
+    Camera camera_;
 };

@@ -17,11 +17,13 @@ add_executable(opengl_triangle
     glwindow/glwindow.cpp
     shape/src/shapeGenerator.cpp
     shaders.qrc
+    camera/src/camera.cpp
 )
 
 target_include_directories(opengl_triangle PRIVATE
     glwindow
     shape/include
+    camera/include
 )
 
 

@@ -89,10 +89,11 @@ void GLWindow::sendDataToOpengl(){
 
 
     mat4 projectMartix = glm::perspective(glm::radians(90.0f),(float)width()/height(),0.1f,10.0f);
+    mat4 worldToViewMartix = camera_.getWorldToViewMartix();
 
     mat4 fullTransformMartices[] = {
-        projectMartix * glm::translate(mat4(1.0f),glm::vec3(-1.0f,0.0f,-3.0f))*glm::rotate(mat4(1.0f),glm::radians(36.0f),glm::vec3(1.0f,0.0f,0.0f)),
-        projectMartix * glm::translate(mat4(1.0f),glm::vec3(1.0f,0.0f,-3.75f))*glm::rotate(mat4(1.0f),glm::radians(126.0f),glm::vec3(0.0f,1.0f,0.0f)),
+        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(-1.0f,0.0f,-3.0f))*glm::rotate(mat4(1.0f),glm::radians(36.0f),glm::vec3(1.0f,0.0f,0.0f)),
+        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(1.0f,0.0f,-3.75f))*glm::rotate(mat4(1.0f),glm::radians(126.0f),glm::vec3(0.0f,1.0f,0.0f)),
     };
 
     glGenBuffers(1, &fullTransformMartixBufferId_);
