@@ -64,7 +64,7 @@ bool GLWindow::checkShaderLink(GLuint programId){
 }
 
 void GLWindow::sendDataToOpengl(){
-    ShapeData cube = ShapeGenerator::createPlane();
+    ShapeData cube = ShapeGenerator::loadModel("models/teapot.obj",0.03f);
     ShapeData arrow =  ShapeGenerator::createArrow();
 
     cubeIndexCount_ = cube.index_num;

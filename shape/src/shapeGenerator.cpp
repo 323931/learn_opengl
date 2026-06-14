@@ -4,6 +4,10 @@
 #include <GL/gl.h>
 #include <glm/glm.hpp>
 #include "random.cpp"
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
 using glm::vec3;
 
 ShapeData ShapeGenerator::createTriangle(){
@@ -224,4 +228,61 @@ void ShapeGenerator::makePlaneIndex(ShapeData& data,int dimension){
             data.indices[index++] = i * dimension + j+1;//1
         }
     }
+}
+
+ShapeData ShapeGenerator::loadModel(const std::string &path,float scale){
+    std::ifstream file(path);
+    ShapeData res;
+
+    if(!file.is_open()){
+        std::cerr << "Failed to open file: " << path << std::endl;
+        return res;
+    }
+
+    std::vector<Vertex> vertices;
+    std::vector<GLushort> indices;
+
+    std::string line;
+    while(std::getline(file,line)){
+        std::istringstream lineStream(line);
+
+        std::string type;
+        lineStream >> type;
+
+        if(type == "v"){
+            float x,y,z;
+            lineStream >>x >>y >>z;
+            Vertex vertex;
+            vertex.position = glm::vec3(x,y,z) * scale;
+            vertex.color = randomColor();
+            vertices.push_back(vertex);
+        }
+
+        if(type == "f"){
+            std::string v1,v2,v3;
+            lineStream >>v1 >>v2 >>v3;
+            indices.push_back(parseObjVertexIndex(v1));
+            indices.push_back(parseObjVertexIndex(v2));
+            indices.push_back(parseObjVertexIndex(v3));
+        }
+    }
+
+    res.vertex_num= vertices.size();
+    res.vertices = new Vertex[res.vertex_num];
+    memcpy(res.vertices, vertices.data(), res.vertex_num * sizeof(Vertex));
+
+    res.index_num = indices.size();
+    res.indices = new GLushort[res.index_num];
+    memcpy(res.indices, indices.data(), res.index_num * sizeof(GLushort));
+
+    return res;
+}
+
+//parseObjVertexIndex("12/8/3") -> 11
+//parseObjVertexIndex("12//3") -> 11
+GLushort ShapeGenerator::parseObjVertexIndex(const std::string &faceToken){
+    const size_t slashPosition = faceToken.find('/');
+    const std::string vertexIndexText = faceToken.substr(0, slashPosition);
+    const int objIndex = std::stoi(vertexIndexText);
+    return static_cast<GLushort>(objIndex - 1);
 }
