@@ -3,7 +3,7 @@
 #include "vertex.h"
 #include <GL/gl.h>
 #include <glm/glm.hpp>
-
+#include "random.cpp"
 using glm::vec3;
 
 ShapeData ShapeGenerator::createTriangle(){
@@ -180,4 +180,48 @@ ShapeData ShapeGenerator::createArrow(){
     res.indices = new GLushort[res.index_num];
     memcpy(res.indices, stackIndices, sizeof(stackIndices));
     return res;
+}
+
+
+ShapeData ShapeGenerator::createPlane(int dimension){
+    ShapeData res;
+    makePlaneVertex(res,dimension);
+    makePlaneIndex(res,dimension);
+    return res;
+}
+
+
+void ShapeGenerator::makePlaneVertex(ShapeData& data,int dimension){
+    data.vertices = new Vertex[dimension * dimension];
+    data.vertex_num = dimension * dimension;
+    int half = dimension/2;
+    //假如是10 * 10的平面，那就是 100个顶点，依次循环给其赋值即可。
+    for(int i = 0;i<dimension;++i){
+        for(int j = 0;j<dimension;++j){
+            Vertex &v = data.vertices[i * dimension + j];
+            v.position.x = j-half;//-5 -4 -3 -2 -1 0 1 2 3 4 5
+            v.position.z = i-half;//-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5
+            v.position.y = 0.0f;
+            v.color = randomColor();
+        }
+    }
+}
+
+void ShapeGenerator::makePlaneIndex(ShapeData& data,int dimension){
+    //创建索引，可以以3*3的来看，其实就是2*2的矩阵，一个矩形是两个三角形，一个三角形三个顶点，所以就是 dimension-1 * dimension-1 * 2 * 3
+    data.indices = new GLushort[(dimension-1) * (dimension-1) * 2 * 3];
+    data.index_num = (dimension-1) * (dimension-1) * 2 * 3;
+    int index = 0;
+    for(int i = 0;i<dimension-1;++i){
+        for(int j = 0;j<dimension-1;++j){
+            data.indices[index++] = i * dimension + j;//0
+            data.indices[index++] = i * dimension + j + dimension; //3
+            data.indices[index++] = i * dimension + j + dimension +1;//4
+
+
+            data.indices[index++] = i * dimension + j;//0
+            data.indices[index++] = i * dimension + j + dimension +1;//4
+            data.indices[index++] = i * dimension + j+1;//1
+        }
+    }
 }

@@ -24,6 +24,7 @@ target_include_directories(opengl_triangle PRIVATE
     glwindow
     shape/include
     camera/include
+    tools/
 )
 
 

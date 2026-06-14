@@ -64,7 +64,7 @@ bool GLWindow::checkShaderLink(GLuint programId){
 }
 
 void GLWindow::sendDataToOpengl(){
-    ShapeData cube = ShapeGenerator::createCube();
+    ShapeData cube = ShapeGenerator::createPlane();
     ShapeData arrow =  ShapeGenerator::createArrow();
 
     cubeIndexCount_ = cube.index_num;
@@ -290,7 +290,7 @@ void GLWindow::mouseMoveEvent(QMouseEvent *event){
 }
 
 void GLWindow::updateFullTransformMartix(){
-    mat4 projectMartix = glm::perspective(glm::radians(90.0f),(float)width()/height(),0.1f,10.0f);
+    mat4 projectMartix = glm::perspective(glm::radians(90.0f),(float)width()/height(),0.1f,20.0f);
     mat4 worldToViewMartix = camera_.getWorldToViewMartix();
 
     mat4 fullTransformMartices[] = {
