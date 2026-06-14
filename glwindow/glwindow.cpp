@@ -1,5 +1,6 @@
 #include "glwindow.h"
 #include "shapedata.h"
+#include "vertex.h"
 
 #include <GL/gl.h>
 #include <GL/glext.h>
@@ -63,18 +64,18 @@ bool GLWindow::checkShaderLink(GLuint programId){
 }
 
 void GLWindow::sendDataToOpengl(){
-
-    ShapeData shape =  ShapeGenerator::createArrow();
-    indexCount_ = shape.index_num;
+    //send cube to opengl
+    ShapeData shape =  ShapeGenerator::createCube();
+    cubeIndexCount_ = shape.index_num;
     //在gpu上申请一个 vao，vertex array object ，句柄放到vaoid。
-    glGenVertexArrays(1, &vaoId_);
+    glGenVertexArrays(1, &cubeVaoId_);
     //激活这个vao，之后对vbo，顶点属性的操作都会写进这个vao
-    glBindVertexArray(vaoId_);
+    glBindVertexArray(cubeVaoId_);
 
     //在gpu申请一个vbo，vertex buffer object，句柄在vboid
-    glGenBuffers(1, &vboId_);
+    glGenBuffers(1, &cubeVboId_);
     //把刚创建的vbo 绑定要 GL_ARRAY_BUFFER这个绑定点，OpenGL 很多操作都针对「当前绑定的 buffer」，所以先 bind 再 glBufferData。
-    glBindBuffer(GL_ARRAY_BUFFER, vboId_);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeVboId_);
     //分配空间
     glBufferData(GL_ARRAY_BUFFER, shape.vertices_size(), shape.vertices, GL_STATIC_DRAW);
 
@@ -88,12 +89,12 @@ void GLWindow::sendDataToOpengl(){
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           reinterpret_cast<void*>(offsetof(Vertex, color)));
 
-    glGenBuffers(1, &indexBufferId_);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferId_);
+    glGenBuffers(1, &cubeIndexBufferId_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIndexBufferId_);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, shape.indices_size(), shape.indices, GL_STATIC_DRAW);
 
-    glGenBuffers(1, &fullTransformMartixBufferId_);
-    glBindBuffer(GL_ARRAY_BUFFER, fullTransformMartixBufferId_);
+    glGenBuffers(1, &cubeFullTransformMartixBufferId_);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeFullTransformMartixBufferId_);
     glBufferData(GL_ARRAY_BUFFER, sizeof(mat4)*2, nullptr, GL_DYNAMIC_DRAW);
 
     // glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*0));
@@ -119,6 +120,55 @@ void GLWindow::sendDataToOpengl(){
     glBindVertexArray(0);
 
     std::cerr << "Cube uploaded: " << shape.vertex_num << " vertices, "
+              << shape.index_num << " indices"
+              << " v2=(" << shape.vertices[2].position.x << ","
+              << shape.vertices[2].position.y << ","
+              << shape.vertices[2].position.z << ")"
+              << " v21=(" << shape.vertices[21].position.x << ","
+              << shape.vertices[21].position.y << ","
+              << shape.vertices[21].position.z << ")\n";
+
+    shape.release();
+
+    //send arrow to opengl
+    shape = ShapeGenerator::createArrow();
+    arrowIndexCount_ = shape.index_num;
+
+    glGenVertexArrays(1, &arrowVaoId_);
+    glBindVertexArray(arrowVaoId_);
+
+    glGenBuffers(1, &arrowVboId_);
+    glBindBuffer(GL_ARRAY_BUFFER, arrowVboId_);
+    glBufferData(GL_ARRAY_BUFFER, shape.vertices_size(), shape.vertices, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+     reinterpret_cast<void*>(offsetof(Vertex, position)));
+
+     glEnableVertexAttribArray(1);
+     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
+     reinterpret_cast<void*>(offsetof(Vertex,color)));
+
+
+    glGenBuffers(1, &arrowIndexBufferId_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, arrowIndexBufferId_);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, shape.indices_size(), shape.indices, GL_STATIC_DRAW);
+
+    glGenBuffers(1, &arrowFullTransformMartixBufferId_);
+    glBindBuffer(GL_ARRAY_BUFFER, arrowFullTransformMartixBufferId_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
+    
+    
+    for(size_t i = 0; i<4;++i){
+        glVertexAttribPointer(i+2, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*i*4));
+        glEnableVertexAttribArray(i+2);
+        glVertexAttribDivisor(i+2, 1);
+    }
+
+    glBindVertexArray(0);
+
+
+    std::cerr << "Arrow uploaded: " << shape.vertex_num << " vertices, "
               << shape.index_num << " indices"
               << " v2=(" << shape.vertices[2].position.x << ","
               << shape.vertices[2].position.y << ","
@@ -165,11 +215,18 @@ void GLWindow::updateFullTransformMartix(){
     mat4 worldToViewMartix = camera_.getWorldToViewMartix();
 
     mat4 fullTransformMartices[] = {
-        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(-1.0f,0.0f,-3.0f))*glm::rotate(mat4(1.0f),glm::radians(36.0f),glm::vec3(1.0f,0.0f,0.0f)),
-        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(1.0f,0.0f,-3.75f))*glm::rotate(mat4(1.0f),glm::radians(126.0f),glm::vec3(0.0f,1.0f,0.0f)),
+        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(-2.8f,0.0f,-3.5f))*glm::rotate(mat4(1.0f),glm::radians(36.0f),glm::vec3(1.0f,0.0f,0.0f)),
+        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(1.2f,0.0f,-3.75f))*glm::rotate(mat4(1.0f),glm::radians(126.0f),glm::vec3(-1.0f,1.0f,0.0f)),
     };
-    glBindBuffer(GL_ARRAY_BUFFER, fullTransformMartixBufferId_);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeFullTransformMartixBufferId_);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4)*2, fullTransformMartices);
+
+    mat4 arrowFullTransformMartices[] = {
+        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(-1.0f,0.0f,-3.0f))*glm::rotate(mat4(1.0f),glm::radians(96.0f),glm::vec3(1.0f,0.0f,0.0f)),
+    };
+
+    glBindBuffer(GL_ARRAY_BUFFER, arrowFullTransformMartixBufferId_);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), arrowFullTransformMartices);
 }
 
 void GLWindow::keyPressEvent(QKeyEvent *event){
@@ -261,17 +318,11 @@ void GLWindow::resizeGL(int /*w*/, int /*h*/)
 
 void GLWindow::paintGL()
 {
-    if (programId_ == 0 || vaoId_ == 0 || width() <= 0 || height() <= 0) {
-        std::cerr << "paintGL skip: program=" << programId_ << " vao=" << vaoId_
-                  << " size=" << width() << "x" << height() << "\n";
-        return;
-    }
-
     glViewport(0, 0, width(), height());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(programId_);
-    glBindVertexArray(vaoId_);
+    glBindVertexArray(cubeVaoId_);
 
     //注意 矩阵作用的顺序是 ： 旋转后，再平移，最后投影
     //所以创建顺序可以这样写，避免多做一些不必要的乘法运算
@@ -303,14 +354,18 @@ void GLWindow::paintGL()
     // glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, nullptr);
 
     updateFullTransformMartix();
-    glDrawElementsInstanced(GL_TRIANGLES, indexCount_, GL_UNSIGNED_SHORT, nullptr, 2);
+    glDrawElementsInstanced(GL_TRIANGLES, cubeIndexCount_, GL_UNSIGNED_SHORT, nullptr, 2);
 
+    
+    glBindVertexArray(0);
+    glBindVertexArray(arrowVaoId_);
+    glDrawElementsInstanced(GL_TRIANGLES, arrowIndexCount_, GL_UNSIGNED_SHORT, nullptr, 1);
+    glBindVertexArray(0);
+    
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
         std::cerr << "OpenGL error after draw: 0x" << std::hex << err << std::dec << "\n";
-    }
-
-    glBindVertexArray(0);
+    }    
 }
 
 QString GLWindow::readShaderCode(const QString& path)
@@ -366,7 +421,8 @@ void GLWindow::installShaders()
 
 GLWindow::~GLWindow(){
     glDeleteProgram(programId_);
-    glDeleteVertexArrays(1, &vaoId_);
-    glDeleteBuffers(1, &vboId_);
-    glDeleteBuffers(1, &indexBufferId_);
+    glDeleteVertexArrays(1, &cubeVaoId_);
+    glDeleteBuffers(1, &cubeVboId_);
+    glDeleteBuffers(1, &cubeIndexBufferId_);
+    glDeleteBuffers(1, &cubeFullTransformMartixBufferId_);
 }

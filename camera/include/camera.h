@@ -23,6 +23,6 @@ private:
     glm::vec3 viewDirection;
     const glm::vec3 upDirection;
     glm::vec2 oldMousePosition;
-    float sensitivity = 0.002f;
+    float sensitivity = 0.02f;
     bool isFirstMouse = true;
 };

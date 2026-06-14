@@ -38,12 +38,18 @@ private:
     QString readShaderCode(const QString& path);
 
     GLuint programId_ = 0;
-    GLuint vaoId_ = 0;
-    GLuint vboId_ = 0;
-    GLuint indexBufferId_ = 0;
-    GLuint offsetBufferId_ = 0;
-    GLuint fullTransformMartixBufferId_ = 0;
-    GLsizei indexCount_ = 0;
+    //cube 
+    GLuint cubeVaoId_ = 0;
+    GLuint cubeVboId_ = 0;
+    GLuint cubeIndexBufferId_ = 0;
+    GLuint cubeFullTransformMartixBufferId_ = 0;
+    GLuint cubeIndexCount_ = 0;
+    //aroow
+    GLuint arrowVaoId_ = 0;
+    GLuint arrowVboId_ = 0;
+    GLuint arrowIndexBufferId_ = 0;
+    GLuint arrowFullTransformMartixBufferId_ = 0;
+    GLsizei arrowIndexCount_ = 0;
 private:
     const float per_step = 0.1f;
     int triangle_num = 0;
