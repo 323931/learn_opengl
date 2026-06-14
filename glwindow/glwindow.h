@@ -30,9 +30,14 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
     void sendDataToOpengl();
     void sendAnotherTriangle();
+    void sendCubeToOpengl();
+    void sendArrowToOpengl();
+
     ~GLWindow();
 
 private:
+    void configVao(GLuint vaoId, GLuint vboId, GLuint indexBufferId);
+    void bindFullTransformMartixToVao(GLuint vaoId, GLuint bufferId);
     void updateFullTransformMartix();
     void installShaders();
     QString readShaderCode(const QString& path);
@@ -50,6 +55,11 @@ private:
     GLuint arrowIndexBufferId_ = 0;
     GLuint arrowFullTransformMartixBufferId_ = 0;
     GLsizei arrowIndexCount_ = 0;
+
+    //只用一个缓存区来存cube和arrow
+    GLuint totalVboId_ = 0;
+    GLuint totalIndexBufferId_ = 0;
+
 private:
     const float per_step = 0.1f;
     int triangle_num = 0;

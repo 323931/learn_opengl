@@ -64,6 +64,55 @@ bool GLWindow::checkShaderLink(GLuint programId){
 }
 
 void GLWindow::sendDataToOpengl(){
+    ShapeData cube = ShapeGenerator::createCube();
+    ShapeData arrow =  ShapeGenerator::createArrow();
+
+    cubeIndexCount_ = cube.index_num;
+    arrowIndexCount_ = arrow.index_num;
+    const GLushort arrowVertexOffset = cube.vertex_num;
+
+    glGenBuffers(1, &totalVboId_);
+    glBindBuffer(GL_ARRAY_BUFFER, totalVboId_);
+    glBufferData(GL_ARRAY_BUFFER, cube.vertices_size()+arrow.vertices_size(), nullptr, GL_STATIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, cube.vertices_size(), cube.vertices);
+    glBufferSubData(GL_ARRAY_BUFFER, cube.vertices_size(), arrow.vertices_size(), arrow.vertices);
+
+
+    std::vector<GLushort> arrowIndices;
+    arrowIndices.reserve(arrow.index_num);
+    for (int i = 0; i < arrow.index_num; ++i) {
+        arrowIndices.push_back(arrow.indices[i] + arrowVertexOffset);
+    }
+    
+    glGenBuffers(1, &totalIndexBufferId_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, totalIndexBufferId_);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, cube.indices_size()+arrow.indices_size(), nullptr, GL_STATIC_DRAW);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, cube.indices_size(), cube.indices);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, cube.indices_size(), arrow.indices_size(), arrowIndices.data());
+    
+    glGenVertexArrays(1, &cubeVaoId_);
+    glGenVertexArrays(1, &arrowVaoId_);
+
+
+    configVao(cubeVaoId_, totalVboId_, totalIndexBufferId_);
+    configVao(arrowVaoId_, totalVboId_, totalIndexBufferId_);
+
+    glBindVertexArray(0);
+
+    glGenBuffers(1, &cubeFullTransformMartixBufferId_);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeFullTransformMartixBufferId_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4)*2, nullptr, GL_DYNAMIC_DRAW);
+
+
+    glGenBuffers(1, &arrowFullTransformMartixBufferId_);
+    glBindBuffer(GL_ARRAY_BUFFER, arrowFullTransformMartixBufferId_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
+
+    cube.release();
+    arrow.release();
+}
+
+void GLWindow::sendCubeToOpengl(){
     //send cube to opengl
     ShapeData shape =  ShapeGenerator::createCube();
     cubeIndexCount_ = shape.index_num;
@@ -129,9 +178,11 @@ void GLWindow::sendDataToOpengl(){
               << shape.vertices[21].position.z << ")\n";
 
     shape.release();
+}
 
+void GLWindow::sendArrowToOpengl(){
     //send arrow to opengl
-    shape = ShapeGenerator::createArrow();
+    ShapeData shape = ShapeGenerator::createArrow();
     arrowIndexCount_ = shape.index_num;
 
     glGenVertexArrays(1, &arrowVaoId_);
@@ -143,11 +194,11 @@ void GLWindow::sendDataToOpengl(){
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-     reinterpret_cast<void*>(offsetof(Vertex, position)));
+    reinterpret_cast<void*>(offsetof(Vertex, position)));
 
-     glEnableVertexAttribArray(1);
-     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
-     reinterpret_cast<void*>(offsetof(Vertex,color)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
+    reinterpret_cast<void*>(offsetof(Vertex,color)));
 
 
     glGenBuffers(1, &arrowIndexBufferId_);
@@ -169,16 +220,18 @@ void GLWindow::sendDataToOpengl(){
 
 
     std::cerr << "Arrow uploaded: " << shape.vertex_num << " vertices, "
-              << shape.index_num << " indices"
-              << " v2=(" << shape.vertices[2].position.x << ","
-              << shape.vertices[2].position.y << ","
-              << shape.vertices[2].position.z << ")"
-              << " v21=(" << shape.vertices[21].position.x << ","
-              << shape.vertices[21].position.y << ","
-              << shape.vertices[21].position.z << ")\n";
+            << shape.index_num << " indices"
+            << " v2=(" << shape.vertices[2].position.x << ","
+            << shape.vertices[2].position.y << ","
+            << shape.vertices[2].position.z << ")"
+            << " v21=(" << shape.vertices[21].position.x << ","
+            << shape.vertices[21].position.y << ","
+            << shape.vertices[21].position.z << ")\n";
 
     shape.release();
+    
 }
+
 
 void GLWindow::sendAnotherTriangle(){
     //制作一个三角形动态移动的效果，所以一次需要传递三个顶点，第一次定位在左上角
@@ -202,6 +255,32 @@ void GLWindow::sendAnotherTriangle(){
 
     glBufferSubData(GL_ARRAY_BUFFER, triangle_num * byte_size_per_triangle, byte_size_per_triangle, vertices);
     triangle_num++;
+}
+
+void GLWindow::configVao(GLuint vaoId, GLuint vboId, GLuint indexBufferId){
+    glBindVertexArray(vaoId);
+    glBindBuffer(GL_ARRAY_BUFFER, vboId);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferId);
+
+    //绑定顶点属性
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                            reinterpret_cast<void*>(offsetof(Vertex, position)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                            reinterpret_cast<void*>(offsetof(Vertex, color)));
+
+}
+
+void GLWindow::bindFullTransformMartixToVao(GLuint vaoId, GLuint bufferId){
+    glBindVertexArray(vaoId);
+
+    glBindBuffer(GL_ARRAY_BUFFER, bufferId);
+    for(size_t i = 0; i<4;++i){
+        glVertexAttribPointer(i+2, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*i*4));
+        glEnableVertexAttribArray(i+2);
+        glVertexAttribDivisor(i+2, 1);
+    }
 }
 
 void GLWindow::mouseMoveEvent(QMouseEvent *event){
@@ -272,40 +351,6 @@ void GLWindow::initializeGL(){
         std::cerr << "Shader program OK, id=" << programId_ << "\n";
     }
     
-    // glGenVertexArrays(1, &vaoId_);
-    // glBindVertexArray(vaoId_);    
-    
-    // float vertices[] = {
-    //     -1.0f,+1.0f,
-    //     -1.0f,+0.0f,
-    //     -0.9f,+1.0f,
-    // };
-    // glGenBuffers(1, &vboId_);
-    // glBindBuffer(GL_ARRAY_BUFFER, vboId_);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // glEnableVertexAttribArray(0);
-    // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float)*2, nullptr);
-
-    // float offsets[] = {0.0f,0.5f,0.9f,1.1f,1.4f};
-    // GLuint offsetBufferId;
-    // glGenBuffers(1, &offsetBufferId);
-    // glBindBuffer(GL_ARRAY_BUFFER, offsetBufferId);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(offsets), offsets, GL_STATIC_DRAW);
-    // glEnableVertexAttribArray(1);
-    // glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(float), nullptr);
-    // glVertexAttribDivisor(1, 1);
-
-    // GLushort indices[] = {0,1,2};
-    // glGenBuffers(1, &indexBufferId_);
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferId_);
-    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-
-    // glBindVertexArray(0);
-    // glBindBuffer(GL_ARRAY_BUFFER, 0);
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
     updateFullTransformMartix();
     
     update(); // 触发首帧 paintGL（静态立方体也要重绘一次）
@@ -323,6 +368,7 @@ void GLWindow::paintGL()
 
     glUseProgram(programId_);
     glBindVertexArray(cubeVaoId_);
+    bindFullTransformMartixToVao(cubeVaoId_, cubeFullTransformMartixBufferId_);
 
     //注意 矩阵作用的顺序是 ： 旋转后，再平移，最后投影
     //所以创建顺序可以这样写，避免多做一些不必要的乘法运算
@@ -356,10 +402,10 @@ void GLWindow::paintGL()
     updateFullTransformMartix();
     glDrawElementsInstanced(GL_TRIANGLES, cubeIndexCount_, GL_UNSIGNED_SHORT, nullptr, 2);
 
-    
-    glBindVertexArray(0);
     glBindVertexArray(arrowVaoId_);
-    glDrawElementsInstanced(GL_TRIANGLES, arrowIndexCount_, GL_UNSIGNED_SHORT, nullptr, 1);
+    bindFullTransformMartixToVao(arrowVaoId_, arrowFullTransformMartixBufferId_);
+
+    glDrawElementsInstanced(GL_TRIANGLES, arrowIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)), 1);
     glBindVertexArray(0);
     
     GLenum err = glGetError();
