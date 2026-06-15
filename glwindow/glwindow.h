@@ -55,6 +55,10 @@ private:
     GLuint arrowIndexBufferId_ = 0;
     GLuint arrowFullTransformMartixBufferId_ = 0;
     GLsizei arrowIndexCount_ = 0;
+    //plane
+    GLuint planeVaoId_ = 0;
+    GLuint planeFullTransformMartixBufferId_ = 0;
+    GLuint planeIndexCount_ = 0;
 
     //只用一个缓存区来存cube和arrow
     GLuint totalVboId_ = 0;

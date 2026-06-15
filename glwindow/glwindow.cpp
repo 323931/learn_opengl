@@ -66,16 +66,20 @@ bool GLWindow::checkShaderLink(GLuint programId){
 void GLWindow::sendDataToOpengl(){
     ShapeData cube = ShapeGenerator::loadModel("models/teapot.obj",0.03f);
     ShapeData arrow =  ShapeGenerator::createArrow();
+    ShapeData plane = ShapeGenerator::createPlane(20);
 
     cubeIndexCount_ = cube.index_num;
     arrowIndexCount_ = arrow.index_num;
+    planeIndexCount_ = plane.index_num;
     const GLushort arrowVertexOffset = cube.vertex_num;
+    GLushort planeVertexOffset = cube.vertex_num + arrow.vertex_num;
 
     glGenBuffers(1, &totalVboId_);
     glBindBuffer(GL_ARRAY_BUFFER, totalVboId_);
-    glBufferData(GL_ARRAY_BUFFER, cube.vertices_size()+arrow.vertices_size(), nullptr, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, cube.vertices_size()+arrow.vertices_size()+plane.vertices_size(), nullptr, GL_STATIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, cube.vertices_size(), cube.vertices);
     glBufferSubData(GL_ARRAY_BUFFER, cube.vertices_size(), arrow.vertices_size(), arrow.vertices);
+    glBufferSubData(GL_ARRAY_BUFFER, cube.vertices_size()+arrow.vertices_size(), plane.vertices_size(), plane.vertices);
 
 
     std::vector<GLushort> arrowIndices;
@@ -83,19 +87,27 @@ void GLWindow::sendDataToOpengl(){
     for (int i = 0; i < arrow.index_num; ++i) {
         arrowIndices.push_back(arrow.indices[i] + arrowVertexOffset);
     }
-    
+
+    std::vector<GLushort> planeIndices;
+    planeIndices.reserve(plane.index_num);
+    for(int i = 0;i<plane.index_num;++i){
+        planeIndices.push_back(plane.indices[i] + planeVertexOffset);
+    }
+
     glGenBuffers(1, &totalIndexBufferId_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, totalIndexBufferId_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, cube.indices_size()+arrow.indices_size(), nullptr, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, cube.indices_size()+arrow.indices_size()+plane.indices_size(), nullptr, GL_STATIC_DRAW);
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, cube.indices_size(), cube.indices);
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, cube.indices_size(), arrow.indices_size(), arrowIndices.data());
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, cube.indices_size()+arrow.indices_size(), plane.indices_size(), planeIndices.data());
     
     glGenVertexArrays(1, &cubeVaoId_);
     glGenVertexArrays(1, &arrowVaoId_);
-
+    glGenVertexArrays(1, &planeVaoId_);
 
     configVao(cubeVaoId_, totalVboId_, totalIndexBufferId_);
     configVao(arrowVaoId_, totalVboId_, totalIndexBufferId_);
+    configVao(planeVaoId_, totalVboId_, totalIndexBufferId_);
 
     glBindVertexArray(0);
 
@@ -108,8 +120,13 @@ void GLWindow::sendDataToOpengl(){
     glBindBuffer(GL_ARRAY_BUFFER, arrowFullTransformMartixBufferId_);
     glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
 
+    glGenBuffers(1, &planeFullTransformMartixBufferId_);
+    glBindBuffer(GL_ARRAY_BUFFER, planeFullTransformMartixBufferId_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
+
     cube.release();
     arrow.release();
+    plane.release();
 }
 
 void GLWindow::sendCubeToOpengl(){
@@ -294,18 +311,27 @@ void GLWindow::updateFullTransformMartix(){
     mat4 worldToViewMartix = camera_.getWorldToViewMartix();
 
     mat4 fullTransformMartices[] = {
-        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(-2.8f,0.0f,-3.5f))*glm::rotate(mat4(1.0f),glm::radians(36.0f),glm::vec3(1.0f,0.0f,0.0f)),
-        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(1.2f,0.0f,-3.75f))*glm::rotate(mat4(1.0f),glm::radians(126.0f),glm::vec3(-1.0f,1.0f,0.0f)),
+        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(-2.8f,0.0f,-6.5f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f)),
+        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(2.8f,0.0f,-6.75f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(-1.0f,1.0f,0.0f)),
     };
     glBindBuffer(GL_ARRAY_BUFFER, cubeFullTransformMartixBufferId_);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4)*2, fullTransformMartices);
 
     mat4 arrowFullTransformMartices[] = {
-        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(-1.0f,0.0f,-3.0f))*glm::rotate(mat4(1.0f),glm::radians(96.0f),glm::vec3(1.0f,0.0f,0.0f)),
+        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(-1.0f,-1.0f,-5.5f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f)) *glm::scale(mat4(1.0f), glm::vec3(0.5f)),
     };
 
     glBindBuffer(GL_ARRAY_BUFFER, arrowFullTransformMartixBufferId_);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), arrowFullTransformMartices);
+
+
+    mat4 planeFullTransformMartices[] = {
+        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(-1.0f,-1.3f,-3.0f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f)),
+    };
+
+    glBindBuffer(GL_ARRAY_BUFFER, planeFullTransformMartixBufferId_);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), planeFullTransformMartices);
+
 }
 
 void GLWindow::keyPressEvent(QKeyEvent *event){
@@ -341,6 +367,8 @@ void GLWindow::initializeGL(){
 
     glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
     glEnable(GL_DEPTH_TEST);
+    //不渲染背面--鞋带算法
+    glEnable(GL_CULL_FACE);
 
     installShaders();
     sendDataToOpengl();
@@ -404,10 +432,12 @@ void GLWindow::paintGL()
 
     glBindVertexArray(arrowVaoId_);
     bindFullTransformMartixToVao(arrowVaoId_, arrowFullTransformMartixBufferId_);
-
     glDrawElementsInstanced(GL_TRIANGLES, arrowIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)), 1);
-    glBindVertexArray(0);
     
+    glBindVertexArray(planeVaoId_);
+    bindFullTransformMartixToVao(planeVaoId_, planeFullTransformMartixBufferId_);
+    glDrawElementsInstanced(GL_TRIANGLES, planeIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)+arrowIndexCount_*sizeof(GLushort)), 1);
+
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
         std::cerr << "OpenGL error after draw: 0x" << std::hex << err << std::dec << "\n";
