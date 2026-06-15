@@ -15,4 +15,6 @@ public:
 
     static ShapeData loadModel(const std::string& path,float scale = 1.0f);
     static GLushort parseObjVertexIndex(const std::string& faceToken);
+
+    static ShapeData createNormal(ShapeData& shapeData);
 };

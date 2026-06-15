@@ -8,24 +8,92 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 using glm::vec3;
+
+glm::vec3 normalFromTriangle(
+    const glm::vec3& a,
+    const glm::vec3& b,
+    const glm::vec3& c
+) {
+    return glm::normalize(glm::cross(b - a, c - a));
+}
+
+glm::vec3 safeNormalFromTriangle(
+    const glm::vec3& a,
+    const glm::vec3& b,
+    const glm::vec3& c
+) {
+    const glm::vec3 normal = glm::cross(b - a, c - a);
+    const float lengthSquared = glm::dot(normal, normal);
+    if (lengthSquared == 0.0f) {
+        return glm::vec3(0.0f);
+    }
+    return glm::normalize(normal);
+}
+
+void calculateSmoothNormals(std::vector<Vertex>& vertices, const std::vector<GLushort>& indices)
+{
+    for (Vertex& vertex : vertices) {
+        vertex.normal = glm::vec3(0.0f);
+    }
+
+    for (size_t i = 0; i + 2 < indices.size(); i += 3) {
+        const GLushort a = indices[i];
+        const GLushort b = indices[i + 1];
+        const GLushort c = indices[i + 2];
+
+        const glm::vec3 normal = safeNormalFromTriangle(
+            vertices[a].position,
+            vertices[b].position,
+            vertices[c].position
+        );
+
+        vertices[a].normal += normal;
+        vertices[b].normal += normal;
+        vertices[c].normal += normal;
+    }
+
+    for (Vertex& vertex : vertices) {
+        const float lengthSquared = glm::dot(vertex.normal, vertex.normal);
+        if (lengthSquared == 0.0f) {
+            vertex.normal = glm::vec3(0.0f, 1.0f, 0.0f);
+        } else {
+            vertex.normal = glm::normalize(vertex.normal);
+        }
+    }
+}
+// 设置一个面的法线，用法：
+// 比如说在arrow中
+// setFaceNormal(stackVerts, {8, 9, 10, 11}, 8, 10, 9);
+// 给 8,9,10,11 这一整个面设置 normal；
+// normal 用三角形 8,10,9 计算。
+void setFaceNormal(Vertex* vertices, std::initializer_list<int> vertexIndices, int a, int b, int c)
+{
+    glm::vec3 normal = normalFromTriangle(
+        vertices[a].position,
+        vertices[b].position,
+        vertices[c].position
+    );
+
+    for (int index : vertexIndices) {
+        vertices[index].normal = normal;
+    }
+}
+
 
 ShapeData ShapeGenerator::createTriangle(){
     ShapeData res;
     //默认创建 0，1     -1，-1    1，-1的三角形
-    GLfloat myTri[]={
-        +0.0f,+1.0f,+0.9f,
-        +1.0f,+0.0f,+0.0f,//1
-
-        -1.0f,-1.0f,+0.9f,
-        +0.0f,+1.0f,+0.0f,//2
-
-        +1.0f,-1.0f,+0.9f,
-        +0.0f,+0.0f,+1.0f,//3
+    std::vector<Vertex> myTri{
+        Vertex(vec3(+0.0f,+1.0f,+0.9f),vec3( +1.0f,+0.0f,+0.0f),vec3(0.0f,0.0f,1.0f)),
+        Vertex(vec3(-1.0f,-1.0f,+0.9f),vec3( +0.0f,+1.0f,+0.0f),vec3(0.0f,0.0f,1.0f)),
+        Vertex(vec3(+1.0f,-1.0f,+0.9f),vec3( +0.0f,+0.0f,+1.0f),vec3(0.0f,0.0f,1.0f)),
     };
-    res.vertex_num = sizeof(myTri)/(sizeof(float)*6);
+
+    res.vertex_num = myTri.size();
     res.vertices = new Vertex[res.vertex_num];
-    memcpy(res.vertices,myTri,sizeof(myTri));
+    memcpy(res.vertices,myTri.data(),res.vertex_num * sizeof(Vertex));
 
     GLushort indeices[] = {0,1,2};
     res.index_num = sizeof(indeices)/(sizeof(indeices[0]));
@@ -38,47 +106,54 @@ ShapeData ShapeGenerator::createTriangle(){
 ShapeData ShapeGenerator::createCube(){
     ShapeData res;
 
-    Vertex myVertices[] = {
+    const vec3 topNormal = vec3(0.0f,1.0f,0.0f);
+    const vec3 frontNormal = vec3(0.0f,0.0f,-1.0f);
+    const vec3 rightNormal = vec3(1.0f,0.0f,0.0f);
+    const vec3 leftNormal = vec3(-1.0f,0.0f,0.0f);
+    const vec3 backNormal = vec3(0.0f,0.0f,+1.0f);
+    const vec3 bottomNormal = vec3(0.0f,-1.0f,0.0f);
+
+    std::vector<Vertex> myVertices = {
         // Top (0-3)
-        Vertex(vec3(-1.0f,+1.0f,+1.0f),vec3(+1.0f,+0.0f,+0.0f)),
-        Vertex(vec3(+1.0f,+1.0f,+1.0f),vec3(+0.0f,+1.0f,+0.0f)),
-        Vertex(vec3(+1.0f,+1.0f,-1.0f),vec3(+0.0f,+0.0f,+1.0f)),
-        Vertex(vec3(-1.0f,+1.0f,-1.0f),vec3(+1.0f,+1.0f,+1.0f)),
+        Vertex(vec3(-1.0f,+1.0f,+1.0f),vec3(+1.0f,+0.0f,+0.0f),topNormal),
+        Vertex(vec3(+1.0f,+1.0f,+1.0f),vec3(+0.0f,+1.0f,+0.0f),topNormal),
+        Vertex(vec3(+1.0f,+1.0f,-1.0f),vec3(+0.0f,+0.0f,+1.0f),topNormal),
+        Vertex(vec3(-1.0f,+1.0f,-1.0f),vec3(+1.0f,+1.0f,+1.0f),topNormal),
 
         // Front (4-7)
-        Vertex(vec3(-1.0f,+1.0f,-1.0f),vec3(+1.0f,+0.0f,+1.0f)),
-        Vertex(vec3(+1.0f,+1.0f,-1.0f),vec3(+0.0f,+0.5f,+0.2f)),
-        Vertex(vec3(+1.0f,-1.0f,-1.0f),vec3(+0.8f,+0.6f,+0.4f)),
-        Vertex(vec3(-1.0f,-1.0f,-1.0f),vec3(+0.3f,+1.0f,+0.5f)),
+        Vertex(vec3(-1.0f,+1.0f,-1.0f),vec3(+1.0f,+0.0f,+1.0f),frontNormal),
+        Vertex(vec3(+1.0f,+1.0f,-1.0f),vec3(+0.0f,+0.5f,+0.2f),frontNormal),
+        Vertex(vec3(+1.0f,-1.0f,-1.0f),vec3(+0.8f,+0.6f,+0.4f),frontNormal),
+        Vertex(vec3(-1.0f,-1.0f,-1.0f),vec3(+0.3f,+1.0f,+0.5f),frontNormal),
 
         // Right (8-11)
-        Vertex(vec3(+1.0f,+1.0f,-1.0f),vec3(+0.2f,+0.5f,+0.2f)),
-        Vertex(vec3(+1.0f,+1.0f,+1.0f),vec3(+0.9f,+0.3f,+0.7f)),
-        Vertex(vec3(+1.0f,-1.0f,+1.0f),vec3(+0.3f,+0.7f,+0.5f)),
-        Vertex(vec3(+1.0f,-1.0f,-1.0f),vec3(+0.5f,+0.7f,+0.5f)),
+        Vertex(vec3(+1.0f,+1.0f,-1.0f),vec3(+0.2f,+0.5f,+0.2f),rightNormal),
+        Vertex(vec3(+1.0f,+1.0f,+1.0f),vec3(+0.9f,+0.3f,+0.7f),rightNormal),
+        Vertex(vec3(+1.0f,-1.0f,+1.0f),vec3(+0.3f,+0.7f,+0.5f),rightNormal),
+        Vertex(vec3(+1.0f,-1.0f,-1.0f),vec3(+0.5f,+0.7f,+0.5f),rightNormal),
 
         // Left / -X (12-15)
-        Vertex(vec3(-1.0f,+1.0f,+1.0f),vec3(+0.7f,+0.8f,+0.2f)),
-        Vertex(vec3(-1.0f,+1.0f,-1.0f),vec3(+0.5f,+0.7f,+0.3f)),
-        Vertex(vec3(-1.0f,-1.0f,-1.0f),vec3(+0.4f,+0.7f,+0.7f)),
-        Vertex(vec3(-1.0f,-1.0f,+1.0f),vec3(+0.2f,+0.5f,+1.0f)),
+        Vertex(vec3(-1.0f,+1.0f,+1.0f),vec3(+0.7f,+0.8f,+0.2f),leftNormal),
+        Vertex(vec3(-1.0f,+1.0f,-1.0f),vec3(+0.5f,+0.7f,+0.3f),leftNormal),
+        Vertex(vec3(-1.0f,-1.0f,-1.0f),vec3(+0.4f,+0.7f,+0.7f),leftNormal),
+        Vertex(vec3(-1.0f,-1.0f,+1.0f),vec3(+0.2f,+0.5f,+1.0f),leftNormal),
 
         // Back / +Z (16-19)
-        Vertex(vec3(+1.0f,+1.0f,+1.0f),vec3(+0.6f,+1.0f,+0.7f)),
-        Vertex(vec3(-1.0f,+1.0f,+1.0f),vec3(+0.6f,+0.4f,+0.8f)),
-        Vertex(vec3(-1.0f,-1.0f,+1.0f),vec3(+0.2f,+0.8f,+0.7f)),
-        Vertex(vec3(+1.0f,-1.0f,+1.0f),vec3(+0.2f,+0.7f,+1.0f)),
+        Vertex(vec3(+1.0f,+1.0f,+1.0f),vec3(+0.6f,+1.0f,+0.7f),backNormal),
+        Vertex(vec3(-1.0f,+1.0f,+1.0f),vec3(+0.6f,+0.4f,+0.8f),backNormal),
+        Vertex(vec3(-1.0f,-1.0f,+1.0f),vec3(+0.2f,+0.8f,+0.7f),backNormal),
+        Vertex(vec3(+1.0f,-1.0f,+1.0f),vec3(+0.2f,+0.7f,+1.0f),backNormal),
 
         // Bottom (20-23)
-        Vertex(vec3(+1.0f,-1.0f,-1.0f),vec3(+0.8f,+0.3f,+0.7f)),
-        Vertex(vec3(-1.0f,-1.0f,-1.0f),vec3(+0.8f,+0.9f,+0.5f)),
-        Vertex(vec3(-1.0f,-1.0f,+1.0f),vec3(+0.5f,+0.8f,+0.5f)),
-        Vertex(vec3(+1.0f,-1.0f,+1.0f),vec3(+0.9f,+1.0f,+0.2f)),
+        Vertex(vec3(+1.0f,-1.0f,-1.0f),vec3(+0.8f,+0.3f,+0.7f),bottomNormal),
+        Vertex(vec3(-1.0f,-1.0f,-1.0f),vec3(+0.8f,+0.9f,+0.5f),bottomNormal),
+        Vertex(vec3(-1.0f,-1.0f,+1.0f),vec3(+0.5f,+0.8f,+0.5f),bottomNormal),
+        Vertex(vec3(+1.0f,-1.0f,+1.0f),vec3(+0.9f,+1.0f,+0.2f),bottomNormal),
     };
 
-    res.vertex_num = sizeof(myVertices)/sizeof(Vertex);
+    res.vertex_num = myVertices.size();
     res.vertices = new Vertex[res.vertex_num];
-    memcpy(res.vertices, myVertices, sizeof(myVertices));
+    memcpy(res.vertices, myVertices.data(), res.vertex_num * sizeof(Vertex));
 
     GLushort myIndices[] = {
         0,1,2,0,2,3,       // top
@@ -98,63 +173,71 @@ ShapeData ShapeGenerator::createCube(){
 
 ShapeData ShapeGenerator::createArrow(){
     ShapeData res;
-    Vertex stackVerts[] =
+    const vec3 topNormal(0.0f, 1.0f, 0.0f);
+    const vec3 bottomNormal(0.0f, -1.0f, 0.0f);
+    const vec3 arrowTipRightNormal(0.832f, 0.0f, -0.555f);
+    const vec3 arrowTipLeftNormal(-0.832f, 0.0f, -0.555f);
+    const vec3 arrowTipBackNormal(0.0f, 0.0f, 1.0f);
+    const vec3 shaftRightNormal(1.0f, 0.0f, 0.0f);
+    const vec3 shaftLeftNormal(-1.0f, 0.0f, 0.0f);
+    const vec3 shaftBackNormal(0.0f, 0.0f, 1.0f);
+    std::vector<Vertex> stackVerts =
     {
         // Top side of arrow head
-        Vertex(glm::vec3( 0.00f,  0.25f, -0.25f), glm::vec3( 1.00f,  0.00f,  0.00f)), // 0
-        Vertex(glm::vec3( 0.50f,  0.25f, -0.25f), glm::vec3( 1.00f,  0.00f,  0.00f)), // 1
-        Vertex(glm::vec3( 0.00f,  0.25f, -1.00f), glm::vec3( 1.00f,  0.00f,  0.00f)), // 2
-        Vertex(glm::vec3(-0.50f,  0.25f, -0.25f), glm::vec3( 1.00f,  0.00f,  0.00f)), // 3
+        Vertex(glm::vec3( 0.00f,  0.25f, -0.25f), glm::vec3( 1.00f,  0.00f,  0.00f),vec3(0.0f,1.0f,0.0f)), // 0
+        Vertex(glm::vec3( 0.50f,  0.25f, -0.25f), glm::vec3( 1.00f,  0.00f,  0.00f),vec3(0.0f,1.0f,0.0f)), // 1
+        Vertex(glm::vec3( 0.00f,  0.25f, -1.00f), glm::vec3( 1.00f,  0.00f,  0.00f),vec3(0.0f,1.0f,0.0f)), // 2
+        Vertex(glm::vec3(-0.50f,  0.25f, -0.25f), glm::vec3( 1.00f,  0.00f,  0.00f),vec3(0.0f,1.0f,0.0f)), // 3
         // Bottom side of arrow head
-        Vertex(glm::vec3( 0.00f, -0.25f, -0.25f), glm::vec3( 0.00f,  0.00f,  1.00f)), // 4
-        Vertex(glm::vec3( 0.50f, -0.25f, -0.25f), glm::vec3( 0.00f,  0.00f,  1.00f)), // 5
-        Vertex(glm::vec3( 0.00f, -0.25f, -1.00f), glm::vec3( 0.00f,  0.00f,  1.00f)), // 6
-        Vertex(glm::vec3(-0.50f, -0.25f, -0.25f), glm::vec3( 0.00f,  0.00f,  1.00f)), // 7
+        Vertex(glm::vec3( 0.00f, -0.25f, -0.25f), glm::vec3( 0.00f,  0.00f,  1.00f),vec3(0.0f,-1.0f,0.0f)), // 4
+        Vertex(glm::vec3( 0.50f, -0.25f, -0.25f), glm::vec3( 0.00f,  0.00f,  1.00f),vec3(0.0f,-1.0f,0.0f)), // 5
+        Vertex(glm::vec3( 0.00f, -0.25f, -1.00f), glm::vec3( 0.00f,  0.00f,  1.00f),vec3(0.0f,-1.0f,0.0f)), // 6
+        Vertex(glm::vec3(-0.50f, -0.25f, -0.25f), glm::vec3( 0.00f,  0.00f,  1.00f),vec3(0.0f,-1.0f,0.0f)), // 7
         // Right side of arrow tip
-        Vertex(glm::vec3( 0.50f,  0.25f, -0.25f), glm::vec3( 0.60f,  1.00f,  0.00f)),// 8
-        Vertex(glm::vec3( 0.00f,  0.25f, -1.00f), glm::vec3( 0.60f,  1.00f,  0.00f)), // 9
-        Vertex(glm::vec3( 0.00f, -0.25f, -1.00f), glm::vec3( 0.60f,  1.00f,  0.00f)), // 10
-        Vertex(glm::vec3( 0.50f, -0.25f, -0.25f), glm::vec3( 0.60f,  1.00f,  0.00f)), // 11
+        Vertex(glm::vec3( 0.50f,  0.25f, -0.25f), glm::vec3( 0.60f,  1.00f,  0.00f),vec3(0.832f, 0.0f, -0.555f)),// 8
+        Vertex(glm::vec3( 0.00f,  0.25f, -1.00f), glm::vec3( 0.60f,  1.00f,  0.00f),vec3(0.832f, 0.0f, -0.555f)), // 9
+        Vertex(glm::vec3( 0.00f, -0.25f, -1.00f), glm::vec3( 0.60f,  1.00f,  0.00f),vec3(0.832f, 0.0f, -0.555f)), // 10
+        Vertex(glm::vec3( 0.50f, -0.25f, -0.25f), glm::vec3( 0.60f,  1.00f,  0.00f),vec3(0.832f, 0.0f, -0.555f)), // 11
         // Left side of arrow tip
-        Vertex(glm::vec3( 0.00f,  0.25f, -1.00f), glm::vec3( 0.00f,  1.00f,  0.00f)), // 12
-        Vertex(glm::vec3(-0.50f,  0.25f, -0.25f), glm::vec3( 0.00f,  1.00f,  0.00f)), // 13
-        Vertex(glm::vec3( 0.00f, -0.25f, -1.00f), glm::vec3( 0.00f,  1.00f,  0.00f)), // 14
-        Vertex(glm::vec3(-0.50f, -0.25f, -0.25f), glm::vec3( 0.00f,  1.00f,  0.00f)), // 15
+        Vertex(glm::vec3( 0.00f,  0.25f, -1.00f), glm::vec3( 0.00f,  1.00f,  0.00f),vec3(-0.832f, 0.0f, -0.555f)), // 12
+        Vertex(glm::vec3(-0.50f,  0.25f, -0.25f), glm::vec3( 0.00f,  1.00f,  0.00f),vec3(-0.832f, 0.0f, -0.555f)), // 13
+        Vertex(glm::vec3( 0.00f, -0.25f, -1.00f), glm::vec3( 0.00f,  1.00f,  0.00f),vec3(-0.832f, 0.0f, -0.555f)), // 14
+        Vertex(glm::vec3(-0.50f, -0.25f, -0.25f), glm::vec3( 0.00f,  1.00f,  0.00f),vec3(-0.832f, 0.0f, -0.555f)), // 15
         // Back side of arrow tip
-        Vertex(glm::vec3(-0.50f,  0.25f, -0.25f), glm::vec3( 0.50f,  0.50f,  0.50f)), // 16
-        Vertex(glm::vec3( 0.50f,  0.25f, -0.25f), glm::vec3( 0.50f,  0.50f,  0.50f)), // 17
-        Vertex(glm::vec3(-0.50f, -0.25f, -0.25f), glm::vec3( 0.50f,  0.50f,  0.50f)), // 18
-        Vertex(glm::vec3( 0.50f, -0.25f, -0.25f), glm::vec3( 0.50f,  0.50f,  0.50f)), // 19
+        Vertex(glm::vec3(-0.50f,  0.25f, -0.25f), glm::vec3( 0.50f,  0.50f,  0.50f),vec3(0.0f, 0.0f, 1.0f)), // 16
+        Vertex(glm::vec3( 0.50f,  0.25f, -0.25f), glm::vec3( 0.50f,  0.50f,  0.50f),vec3(0.0f, 0.0f, 1.0f)), // 17
+        Vertex(glm::vec3(-0.50f, -0.25f, -0.25f), glm::vec3( 0.50f,  0.50f,  0.50f),vec3(0.0f, 0.0f, 1.0f)), // 18
+        Vertex(glm::vec3( 0.50f, -0.25f, -0.25f), glm::vec3( 0.50f,  0.50f,  0.50f),vec3(0.0f, 0.0f, 1.0f)), // 19
         // Top side of back of arrow  
-        Vertex(glm::vec3( 0.25f,  0.25f, -0.25f), glm::vec3( 1.00f,  0.00f,  0.00f)), // 20
-        Vertex(glm::vec3( 0.25f,  0.25f,  1.00f), glm::vec3( 1.00f,  0.00f,  0.00f)), // 21
-        Vertex(glm::vec3(-0.25f,  0.25f,  1.00f), glm::vec3( 1.00f,  0.00f,  0.00f)), // 22
-        Vertex(glm::vec3(-0.25f,  0.25f, -0.25f), glm::vec3( 1.00f,  0.00f,  0.00f)), // 23
+        Vertex(glm::vec3( 0.25f,  0.25f, -0.25f), glm::vec3( 1.00f,  0.00f,  0.00f),vec3(0.0f, 1.0f, 0.0f)), // 20
+        Vertex(glm::vec3( 0.25f,  0.25f,  1.00f), glm::vec3( 1.00f,  0.00f,  0.00f),vec3(0.0f, 1.0f, 0.0f)), // 21
+        Vertex(glm::vec3(-0.25f,  0.25f,  1.00f), glm::vec3( 1.00f,  0.00f,  0.00f),vec3(0.0f, 1.0f, 0.0f)), // 22
+        Vertex(glm::vec3(-0.25f,  0.25f, -0.25f), glm::vec3( 1.00f,  0.00f,  0.00f),vec3(0.0f, 1.0f, 0.0f)), // 23
         // Bottom side of back of arrow
-        Vertex(glm::vec3( 0.25f, -0.25f, -0.25f), glm::vec3( 0.00f,  0.00f,  1.00f)), // 24
-        Vertex(glm::vec3( 0.25f, -0.25f,  1.00f), glm::vec3( 0.00f,  0.00f,  1.00f)), // 25
-        Vertex(glm::vec3(-0.25f, -0.25f,  1.00f), glm::vec3( 0.00f,  0.00f,  1.00f)), // 26
-        Vertex(glm::vec3(-0.25f, -0.25f, -0.25f), glm::vec3( 0.00f,  0.00f,  1.00f)), // 27
+        Vertex(glm::vec3( 0.25f, -0.25f, -0.25f), glm::vec3( 0.00f,  0.00f,  1.00f),vec3(0.0f, -1.0f, 0.0f)), // 24
+        Vertex(glm::vec3( 0.25f, -0.25f,  1.00f), glm::vec3( 0.00f,  0.00f,  1.00f),vec3(0.0f, -1.0f, 0.0f)), // 25
+        Vertex(glm::vec3(-0.25f, -0.25f,  1.00f), glm::vec3( 0.00f,  0.00f,  1.00f),vec3(0.0f, -1.0f, 0.0f)), // 26
+        Vertex(glm::vec3(-0.25f, -0.25f, -0.25f), glm::vec3( 0.00f,  0.00f,  1.00f),vec3(0.0f, -1.0f, 0.0f)), // 27
         // Right side of back of arrow
-        Vertex(glm::vec3( 0.25f,  0.25f, -0.25f), glm::vec3( 0.60f,  1.00f,  0.00f)), // 28
-        Vertex(glm::vec3( 0.25f, -0.25f, -0.25f), glm::vec3( 0.60f,  1.00f,  0.00f)), // 29
-        Vertex(glm::vec3( 0.25f, -0.25f,  1.00f), glm::vec3( 0.60f,  1.00f,  0.00f)), // 30
-        Vertex(glm::vec3( 0.25f,  0.25f,  1.00f), glm::vec3( 0.60f,  1.00f,  0.00f)), // 31
+        Vertex(glm::vec3( 0.25f,  0.25f, -0.25f), glm::vec3( 0.60f,  1.00f,  0.00f),vec3(1.0f, 0.0f, 0.0f)), // 28
+        Vertex(glm::vec3( 0.25f, -0.25f, -0.25f), glm::vec3( 0.60f,  1.00f,  0.00f),vec3(1.0f, 0.0f, 0.0f)), // 29
+        Vertex(glm::vec3( 0.25f, -0.25f,  1.00f), glm::vec3( 0.60f,  1.00f,  0.00f),vec3(1.0f, 0.0f, 0.0f)), // 30
+        Vertex(glm::vec3( 0.25f,  0.25f,  1.00f), glm::vec3( 0.60f,  1.00f,  0.00f),vec3(1.0f, 0.0f, 0.0f)), // 31
         // Left side of back of arrow
-        Vertex(glm::vec3(-0.25f,  0.25f, -0.25f), glm::vec3( 0.00f,  1.00f,  0.00f)), // 32
-        Vertex(glm::vec3(-0.25f, -0.25f, -0.25f), glm::vec3( 0.00f,  1.00f,  0.00f)), // 33
-        Vertex(glm::vec3(-0.25f, -0.25f,  1.00f), glm::vec3( 0.00f,  1.00f,  0.00f)), // 34
-        Vertex(glm::vec3(-0.25f,  0.25f,  1.00f), glm::vec3( 0.00f,  1.00f,  0.00f)), // 35
+        Vertex(glm::vec3(-0.25f,  0.25f, -0.25f), glm::vec3( 0.00f,  1.00f,  0.00f),vec3(-1.0f, 0.0f, 0.0f)), // 32
+        Vertex(glm::vec3(-0.25f, -0.25f, -0.25f), glm::vec3( 0.00f,  1.00f,  0.00f),vec3(-1.0f, 0.0f, 0.0f)), // 33
+        Vertex(glm::vec3(-0.25f, -0.25f,  1.00f), glm::vec3( 0.00f,  1.00f,  0.00f),vec3(-1.0f, 0.0f, 0.0f)), // 34
+        Vertex(glm::vec3(-0.25f,  0.25f,  1.00f), glm::vec3( 0.00f,  1.00f,  0.00f),vec3(-1.0f, 0.0f, 0.0f)), // 35
         // Back side of back of arrow
-        Vertex(glm::vec3(-0.25f,  0.25f,  1.00f), glm::vec3( 0.50f,  0.50f,  0.50f)), // 36
-        Vertex(glm::vec3( 0.25f,  0.25f,  1.00f), glm::vec3( 0.50f,  0.50f,  0.50f)), // 37
-        Vertex(glm::vec3(-0.25f, -0.25f,  1.00f), glm::vec3( 0.50f,  0.50f,  0.50f)), // 38
-        Vertex(glm::vec3( 0.25f, -0.25f,  1.00f), glm::vec3( 0.50f,  0.50f,  0.50f)), // 39
+        Vertex(glm::vec3(-0.25f,  0.25f,  1.00f), glm::vec3( 0.50f,  0.50f,  0.50f),vec3(0.0f, 0.0f, 1.0f)), // 36
+        Vertex(glm::vec3( 0.25f,  0.25f,  1.00f), glm::vec3( 0.50f,  0.50f,  0.50f),vec3(0.0f, 0.0f, 1.0f)), // 37
+        Vertex(glm::vec3(-0.25f, -0.25f,  1.00f), glm::vec3( 0.50f,  0.50f,  0.50f),vec3(0.0f, 0.0f, 1.0f)), // 38
+        Vertex(glm::vec3( 0.25f, -0.25f,  1.00f), glm::vec3( 0.50f,  0.50f,  0.50f),vec3(0.0f, 0.0f, 1.0f)), // 39
     };
 
-    res.vertex_num = sizeof(stackVerts)/sizeof(Vertex);
+    res.vertex_num = stackVerts.size();
     res.vertices = new Vertex[res.vertex_num];
-    memcpy(res.vertices, stackVerts, sizeof(stackVerts));
+    memcpy(res.vertices, stackVerts.data(), res.vertex_num * sizeof(Vertex));
 
     GLushort stackIndices[] =
     {
@@ -207,6 +290,7 @@ void ShapeGenerator::makePlaneVertex(ShapeData& data,int dimension){
             v.position.z = i-half;//-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5
             v.position.y = 0.0f;
             v.color = randomColor();
+            v.normal = vec3(0.0f, 1.0f, 0.0f);
         }
     }
 }
@@ -267,6 +351,8 @@ ShapeData ShapeGenerator::loadModel(const std::string &path,float scale){
         }
     }
 
+    calculateSmoothNormals(vertices, indices);
+
     res.vertex_num= vertices.size();
     res.vertices = new Vertex[res.vertex_num];
     memcpy(res.vertices, vertices.data(), res.vertex_num * sizeof(Vertex));
@@ -285,4 +371,9 @@ GLushort ShapeGenerator::parseObjVertexIndex(const std::string &faceToken){
     const std::string vertexIndexText = faceToken.substr(0, slashPosition);
     const int objIndex = std::stoi(vertexIndexText);
     return static_cast<GLushort>(objIndex - 1);
+}
+
+ShapeData ShapeGenerator::createNormal(ShapeData& shapeData){
+    ShapeData res;
+    return res;
 }

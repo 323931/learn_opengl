@@ -154,6 +154,9 @@ void GLWindow::sendCubeToOpengl(){
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           reinterpret_cast<void*>(offsetof(Vertex, color)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<void*>(offsetof(Vertex, normal)));
 
     glGenBuffers(1, &cubeIndexBufferId_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIndexBufferId_);
@@ -178,9 +181,9 @@ void GLWindow::sendCubeToOpengl(){
     // glVertexAttribDivisor(5, 1);
 
     for(size_t i = 0; i<4;++i){
-        glVertexAttribPointer(i+2, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*i*4));
-        glEnableVertexAttribArray(i+2);
-        glVertexAttribDivisor(i+2, 1);
+        glVertexAttribPointer(i+3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*i*4));
+        glEnableVertexAttribArray(i+3);
+        glVertexAttribDivisor(i+3, 1);
     }
 
     glBindVertexArray(0);
@@ -216,6 +219,9 @@ void GLWindow::sendArrowToOpengl(){
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
     reinterpret_cast<void*>(offsetof(Vertex,color)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+    reinterpret_cast<void*>(offsetof(Vertex, normal)));
 
 
     glGenBuffers(1, &arrowIndexBufferId_);
@@ -228,9 +234,9 @@ void GLWindow::sendArrowToOpengl(){
     
     
     for(size_t i = 0; i<4;++i){
-        glVertexAttribPointer(i+2, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*i*4));
-        glEnableVertexAttribArray(i+2);
-        glVertexAttribDivisor(i+2, 1);
+        glVertexAttribPointer(i+3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*i*4));
+        glEnableVertexAttribArray(i+3);
+        glVertexAttribDivisor(i+3, 1);
     }
 
     glBindVertexArray(0);
@@ -286,6 +292,9 @@ void GLWindow::configVao(GLuint vaoId, GLuint vboId, GLuint indexBufferId){
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                             reinterpret_cast<void*>(offsetof(Vertex, color)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                            reinterpret_cast<void*>(offsetof(Vertex, normal)));
 
 }
 
@@ -294,9 +303,9 @@ void GLWindow::bindFullTransformMartixToVao(GLuint vaoId, GLuint bufferId){
 
     glBindBuffer(GL_ARRAY_BUFFER, bufferId);
     for(size_t i = 0; i<4;++i){
-        glVertexAttribPointer(i+2, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*i*4));
-        glEnableVertexAttribArray(i+2);
-        glVertexAttribDivisor(i+2, 1);
+        glVertexAttribPointer(i+3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*i*4));
+        glEnableVertexAttribArray(i+3);
+        glVertexAttribDivisor(i+3, 1);
     }
 }
 
@@ -394,12 +403,16 @@ void GLWindow::paintGL()
     glViewport(0, 0, width(), height());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    glUseProgram(programId_);
 
     GLint uniformAmbientLightLocation =  glGetUniformLocation(programId_, "ambientLight");
-    glm::vec3 ambientLight = glm::vec3(0.7f, 0.5f, 0.4f);
+    glm::vec3 ambientLight = glm::vec3(0.2f, 0.2f, 0.2f);
     glUniform3fv(uniformAmbientLightLocation,1, &ambientLight[0]);
 
-    glUseProgram(programId_);
+    GLint uniformLightDirectionLocation = glGetUniformLocation(programId_, "lightDirection");
+    glm::vec3 lightDirection = glm::normalize(glm::vec3(1.0f, 1.0f, 1.0f));
+    glUniform3fv(uniformLightDirectionLocation, 1, &lightDirection[0]);
+
     glBindVertexArray(cubeVaoId_);
     bindFullTransformMartixToVao(cubeVaoId_, cubeFullTransformMartixBufferId_);
 
