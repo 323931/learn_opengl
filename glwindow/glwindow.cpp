@@ -394,6 +394,11 @@ void GLWindow::paintGL()
     glViewport(0, 0, width(), height());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
+    GLint uniformAmbientLightLocation =  glGetUniformLocation(programId_, "ambientLight");
+    glm::vec3 ambientLight = glm::vec3(0.7f, 0.5f, 0.4f);
+    glUniform3fv(uniformAmbientLightLocation,1, &ambientLight[0]);
+
     glUseProgram(programId_);
     glBindVertexArray(cubeVaoId_);
     bindFullTransformMartixToVao(cubeVaoId_, cubeFullTransformMartixBufferId_);
