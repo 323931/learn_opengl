@@ -10,6 +10,7 @@ uniform mat4 modelTransformMartix;
 uniform mat4 projectionMartix;
 uniform vec3 ambientLight;
 uniform vec3 lightDirection;
+uniform vec3 lightPosition;
 
 out vec3 thecolor;
 
@@ -19,6 +20,7 @@ void main()
     gl_Position = fullTransformMartix * v;
 
     vec3 normal = normalize(vertexNormal);
-    float diffuse = max(dot(normal, normalize(lightDirection)), 0.0);
-    thecolor = vertexColor * (ambientLight + vec3(diffuse));
+    vec3 lightVertex = normalize(lightPosition - position);
+    float diffuse = max(dot(normal, lightVertex), 0.0);
+    thecolor =  vec3(diffuse,diffuse,diffuse);
 }

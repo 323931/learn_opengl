@@ -461,13 +461,32 @@ void GLWindow::paintGL()
     glUseProgram(programId_);
 
     GLint uniformAmbientLightLocation =  glGetUniformLocation(programId_, "ambientLight");
+    // if(uniformAmbientLightLocation < 0){
+    //     std::cerr<<"ambientLight uniform not found"<<std::endl;
+    // }
     glm::vec3 ambientLight = glm::vec3(0.2f, 0.2f, 0.2f);
-    glUniform3fv(uniformAmbientLightLocation,1, &ambientLight[0]);
+    if(uniformAmbientLightLocation >= 0){
+        glUniform3fv(uniformAmbientLightLocation,1, &ambientLight[0]);
+    }
 
     GLint uniformLightDirectionLocation = glGetUniformLocation(programId_, "lightDirection");
-    glm::vec3 lightDirection = glm::normalize(glm::vec3(1.0f, 1.0f, 1.0f));
-    glUniform3fv(uniformLightDirectionLocation, 1, &lightDirection[0]);
+    // if(uniformLightDirectionLocation < 0){
+    //     std::cerr<<"lightDirection uniform not found"<<std::endl;
+    // }
+    glm::vec3 lightDirection = glm::normalize(glm::vec3(0.0f, -1.0f, 0.0f));
+    if(uniformLightDirectionLocation >= 0){
+        glUniform3fv(uniformLightDirectionLocation, 1, &lightDirection[0]);
+    }
 
+    GLint uniformLightPositionLocation = glGetUniformLocation(programId_, "lightPosition");
+    // if(uniformLightPositionLocation < 0){
+    //     std::cerr<<"lightPosition uniform not found"<<std::endl;
+    // }
+    glm::vec3 lightPosition = glm::vec3(0.0f, 2.0f, 0.0f);
+    if(uniformLightPositionLocation >= 0){
+        glUniform3fv(uniformLightPositionLocation, 1, &lightPosition[0]);
+    }
+    
     glBindVertexArray(cubeVaoId_);
     bindFullTransformMartixToVao(cubeVaoId_, cubeFullTransformMartixBufferId_);
 
@@ -501,30 +520,30 @@ void GLWindow::paintGL()
     // glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, nullptr);
 
     updateFullTransformMartix();
-    glDrawElementsInstanced(GL_TRIANGLES, cubeIndexCount_, GL_UNSIGNED_SHORT, nullptr, 2);
+    // glDrawElementsInstanced(GL_TRIANGLES, cubeIndexCount_, GL_UNSIGNED_SHORT, nullptr, 2);
 
     glBindVertexArray(arrowVaoId_);
     bindFullTransformMartixToVao(arrowVaoId_, arrowFullTransformMartixBufferId_);
-    glDrawElementsInstanced(GL_TRIANGLES, arrowIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)), 1);
-    glDrawElementsInstanced(
-        GL_LINES, 
-        arrowNormalLineIndexCount_, 
-        GL_UNSIGNED_SHORT, 
-        reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_) * sizeof(GLushort)), 
-        1);
+    // glDrawElementsInstanced(GL_TRIANGLES, arrowIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)), 1);
+    // glDrawElementsInstanced(
+    //     GL_LINES, 
+    //     arrowNormalLineIndexCount_, 
+    //     GL_UNSIGNED_SHORT, 
+    //     reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_) * sizeof(GLushort)), 
+    //     1);
 
     glBindVertexArray(planeVaoId_);
     bindFullTransformMartixToVao(planeVaoId_, planeFullTransformMartixBufferId_);
     glDrawElementsInstanced(GL_TRIANGLES, planeIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)+arrowIndexCount_*sizeof(GLushort)), 1);
-    glDrawElementsInstanced(
-        GL_LINES,
-        planeNormalLineIndexCount_,
-        GL_UNSIGNED_SHORT,
-        reinterpret_cast<void*>(
-            (cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_ + arrowNormalLineIndexCount_) * sizeof(GLushort)
-        ),
-        1
-    );
+    // glDrawElementsInstanced(
+    //     GL_LINES,
+    //     planeNormalLineIndexCount_,
+    //     GL_UNSIGNED_SHORT,
+    //     reinterpret_cast<void*>(
+    //         (cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_ + arrowNormalLineIndexCount_) * sizeof(GLushort)
+    //     ),
+    //     1
+    // );
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
         std::cerr << "OpenGL error after draw: 0x" << std::hex << err << std::dec << "\n";
