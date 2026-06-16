@@ -10,17 +10,14 @@ uniform mat4 modelTransformMartix;
 uniform mat4 projectionMartix;
 uniform vec3 ambientLight;
 uniform vec3 lightDirection;
-uniform vec3 lightPosition;
 
-out vec3 thecolor;
+out vec3 theNormal;
+out vec3 thePosition;
 
 void main()
 {
     vec4 v = vec4(position,1.0);
     gl_Position = fullTransformMartix * v;
-
-    vec3 normal = normalize(vertexNormal);
-    vec3 lightVertex = normalize(lightPosition - position);
-    float diffuse = max(dot(normal, lightVertex), 0.0);
-    thecolor =  vec3(diffuse,diffuse,diffuse);
+    theNormal = normalize(vertexNormal);
+    thePosition = position;
 }
