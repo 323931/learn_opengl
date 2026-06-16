@@ -373,7 +373,36 @@ GLushort ShapeGenerator::parseObjVertexIndex(const std::string &faceToken){
     return static_cast<GLushort>(objIndex - 1);
 }
 
-ShapeData ShapeGenerator::createNormal(ShapeData& shapeData){
+ShapeData ShapeGenerator::createNormalLine(const ShapeData& shapeData){
     ShapeData res;
+
+    res.vertex_num = shapeData.vertex_num * 2;
+    res.vertices = new Vertex[res.vertex_num];
+
+    for(int i = 0;i<shapeData.vertex_num;++i){
+        Vertex& sourceVertex = shapeData.vertices[i];
+
+        Vertex& start = res.vertices[i*2];
+        Vertex& end = res.vertices[i*2+1];
+
+        start.position = sourceVertex.position;
+        end.position = start.position + sourceVertex.normal;
+
+        //白色表示法线
+        start.color = glm::vec3(1.0f, 1.0f, 1.0f);
+        end.color = glm::vec3(1.0f, 1.0f, 1.0f);
+
+        start.normal = sourceVertex.normal;
+        end.normal = sourceVertex.normal;
+
+        start.normal = glm::normalize(start.normal);
+        end.normal = glm::normalize(end.normal);
+    }
+
+    res.index_num = res.vertex_num;
+    res.indices = new GLushort[res.index_num];
+    for(int i = 0 ; i<res.index_num;++i){
+        res.indices[i] = i;
+    }
     return res;
 }

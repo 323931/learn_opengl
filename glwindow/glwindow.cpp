@@ -67,19 +67,43 @@ void GLWindow::sendDataToOpengl(){
     ShapeData cube = ShapeGenerator::loadModel("models/teapot.obj",0.03f);
     ShapeData arrow =  ShapeGenerator::createArrow();
     ShapeData plane = ShapeGenerator::createPlane(20);
+    ShapeData arrowNormalLine = ShapeGenerator::createNormalLine(arrow);
+    ShapeData planeNormalLine = ShapeGenerator::createNormalLine(plane);
 
     cubeIndexCount_ = cube.index_num;
     arrowIndexCount_ = arrow.index_num;
     planeIndexCount_ = plane.index_num;
+    arrowNormalLineIndexCount_ = arrowNormalLine.index_num;
+    planeNormalLineIndexCount_ = planeNormalLine.index_num;
+
     const GLushort arrowVertexOffset = cube.vertex_num;
     GLushort planeVertexOffset = cube.vertex_num + arrow.vertex_num;
+    GLushort arrowNormalLineVertexOffset = cube.vertex_num + arrow.vertex_num + plane.vertex_num;
+    GLushort planeNormalLineVertexOffset = cube.vertex_num + arrow.vertex_num + plane.vertex_num + arrowNormalLine.vertex_num;
 
     glGenBuffers(1, &totalVboId_);
     glBindBuffer(GL_ARRAY_BUFFER, totalVboId_);
-    glBufferData(GL_ARRAY_BUFFER, cube.vertices_size()+arrow.vertices_size()+plane.vertices_size(), nullptr, GL_STATIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, cube.vertices_size(), cube.vertices);
-    glBufferSubData(GL_ARRAY_BUFFER, cube.vertices_size(), arrow.vertices_size(), arrow.vertices);
-    glBufferSubData(GL_ARRAY_BUFFER, cube.vertices_size()+arrow.vertices_size(), plane.vertices_size(), plane.vertices);
+    glBufferData(GL_ARRAY_BUFFER, cube.vertices_size()+arrow.vertices_size()+plane.vertices_size()+arrowNormalLine.vertices_size()+planeNormalLine.vertices_size(), nullptr, GL_STATIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 
+        0, 
+        cube.vertices_size(), 
+        cube.vertices);
+    glBufferSubData(GL_ARRAY_BUFFER, 
+        cube.vertices_size(), 
+        arrow.vertices_size(), 
+        arrow.vertices);
+    glBufferSubData(GL_ARRAY_BUFFER, 
+        cube.vertices_size()+arrow.vertices_size(), 
+        plane.vertices_size(), 
+        plane.vertices);
+    glBufferSubData(GL_ARRAY_BUFFER, 
+        cube.vertices_size()+arrow.vertices_size()+plane.vertices_size(), 
+        arrowNormalLine.vertices_size(), 
+        arrowNormalLine.vertices);
+    glBufferSubData(GL_ARRAY_BUFFER, 
+        cube.vertices_size()+arrow.vertices_size()+plane.vertices_size()+arrowNormalLine.vertices_size(), 
+        planeNormalLine.vertices_size(), 
+        planeNormalLine.vertices);
 
 
     std::vector<GLushort> arrowIndices;
@@ -87,20 +111,49 @@ void GLWindow::sendDataToOpengl(){
     for (int i = 0; i < arrow.index_num; ++i) {
         arrowIndices.push_back(arrow.indices[i] + arrowVertexOffset);
     }
-
+   
     std::vector<GLushort> planeIndices;
     planeIndices.reserve(plane.index_num);
     for(int i = 0;i<plane.index_num;++i){
         planeIndices.push_back(plane.indices[i] + planeVertexOffset);
     }
 
+    std::vector<GLushort> arrowNormalLineIndices;
+    arrowNormalLineIndices.reserve(arrowNormalLine.index_num);
+    for(int i = 0;i<arrowNormalLine.index_num;++i){
+        arrowNormalLineIndices.push_back(arrowNormalLine.indices[i] + arrowNormalLineVertexOffset);
+    }
+
+    std::vector<GLushort> planeNormalLineIndices;
+    planeNormalLineIndices.reserve(planeNormalLine.index_num);
+    for(int i = 0;i<planeNormalLine.index_num;++i){
+        planeNormalLineIndices.push_back(planeNormalLine.indices[i] + planeNormalLineVertexOffset);
+    }
+
     glGenBuffers(1, &totalIndexBufferId_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, totalIndexBufferId_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, cube.indices_size()+arrow.indices_size()+plane.indices_size(), nullptr, GL_STATIC_DRAW);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, cube.indices_size(), cube.indices);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, cube.indices_size(), arrow.indices_size(), arrowIndices.data());
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, cube.indices_size()+arrow.indices_size(), plane.indices_size(), planeIndices.data());
-    
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, cube.indices_size()+arrow.indices_size()+plane.indices_size()+arrowNormalLine.indices_size()+planeNormalLine.indices_size(), nullptr, GL_STATIC_DRAW);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 
+        0, 
+        cube.indices_size(),
+        cube.indices);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 
+        cube.indices_size(), 
+        arrow.indices_size(), 
+        arrowIndices.data());
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 
+        cube.indices_size()+arrow.indices_size(), 
+        plane.indices_size(),
+        planeIndices.data());
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 
+        cube.indices_size()+arrow.indices_size()+plane.indices_size(), 
+        arrowNormalLine.indices_size(), 
+        arrowNormalLineIndices.data());
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 
+        cube.indices_size()+arrow.indices_size()+plane.indices_size()+arrowNormalLine.indices_size(), 
+        planeNormalLine.indices_size(), 
+        planeNormalLineIndices.data());
+
     glGenVertexArrays(1, &cubeVaoId_);
     glGenVertexArrays(1, &arrowVaoId_);
     glGenVertexArrays(1, &planeVaoId_);
@@ -127,6 +180,8 @@ void GLWindow::sendDataToOpengl(){
     cube.release();
     arrow.release();
     plane.release();
+    arrowNormalLine.release();
+    planeNormalLine.release();
 }
 
 void GLWindow::sendCubeToOpengl(){
@@ -451,11 +506,25 @@ void GLWindow::paintGL()
     glBindVertexArray(arrowVaoId_);
     bindFullTransformMartixToVao(arrowVaoId_, arrowFullTransformMartixBufferId_);
     glDrawElementsInstanced(GL_TRIANGLES, arrowIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)), 1);
-    
+    glDrawElementsInstanced(
+        GL_LINES, 
+        arrowNormalLineIndexCount_, 
+        GL_UNSIGNED_SHORT, 
+        reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_) * sizeof(GLushort)), 
+        1);
+
     glBindVertexArray(planeVaoId_);
     bindFullTransformMartixToVao(planeVaoId_, planeFullTransformMartixBufferId_);
     glDrawElementsInstanced(GL_TRIANGLES, planeIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)+arrowIndexCount_*sizeof(GLushort)), 1);
-
+    glDrawElementsInstanced(
+        GL_LINES,
+        planeNormalLineIndexCount_,
+        GL_UNSIGNED_SHORT,
+        reinterpret_cast<void*>(
+            (cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_ + arrowNormalLineIndexCount_) * sizeof(GLushort)
+        ),
+        1
+    );
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
         std::cerr << "OpenGL error after draw: 0x" << std::hex << err << std::dec << "\n";
