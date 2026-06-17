@@ -177,6 +177,19 @@ void GLWindow::sendDataToOpengl(){
     glBindBuffer(GL_ARRAY_BUFFER, planeFullTransformMartixBufferId_);
     glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
 
+    glGenBuffers(1, &cubeModelMatrixBufferId_);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeModelMatrixBufferId_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4)*2, nullptr, GL_DYNAMIC_DRAW);
+
+
+    glGenBuffers(1, &arrowModelMatrixBufferId_);
+    glBindBuffer(GL_ARRAY_BUFFER, arrowModelMatrixBufferId_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4)*2, nullptr, GL_DYNAMIC_DRAW);
+
+    glGenBuffers(1, &planeModelMatrixBufferId_);
+    glBindBuffer(GL_ARRAY_BUFFER, planeModelMatrixBufferId_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
+
     cube.release();
     arrow.release();
     plane.release();
@@ -364,13 +377,24 @@ void GLWindow::bindFullTransformMartixToVao(GLuint vaoId, GLuint bufferId){
     }
 }
 
+void GLWindow::bindModelMatrixToVao(GLuint vaoId, GLuint bufferId){
+    glBindVertexArray(vaoId);
+
+    glBindBuffer(GL_ARRAY_BUFFER, bufferId);
+    for(size_t i = 0; i<4;++i){
+        glVertexAttribPointer(i+3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*i*4));
+        glEnableVertexAttribArray(i+3);
+        glVertexAttribDivisor(i+3, 1);
+    }
+}
+
 void GLWindow::mouseMoveEvent(QMouseEvent *event){
     glm::vec2 mousePosition = glm::vec2(event->x(), event->y());
     camera_.mousePositionUpdated(mousePosition);
     update();
 }
 
-void GLWindow::updateFullTransformMartix(){
+void GLWindow::updateFullTransformMatrix(){
     mat4 projectMartix = glm::perspective(glm::radians(90.0f),(float)width()/height(),0.1f,20.0f);
     mat4 worldToViewMartix = camera_.getWorldToViewMartix();
 
@@ -395,7 +419,32 @@ void GLWindow::updateFullTransformMartix(){
 
     glBindBuffer(GL_ARRAY_BUFFER, planeFullTransformMartixBufferId_);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), planeFullTransformMartices);
+}
 
+void GLWindow::updateModelMatrix(){
+    mat4 CubeModelMatrices[] = {
+        glm::translate(mat4(1.0f),glm::vec3(-2.8f,0.0f,-6.5f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f)),
+        glm::translate(mat4(1.0f),glm::vec3(2.8f,0.0f,-6.75f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(-1.0f,1.0f,0.0f)),
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, cubeModelMatrixBufferId_);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4)*2, CubeModelMatrices   );
+
+    mat4 arrowModelMatrices[] = {
+        glm::translate(mat4(1.0f),glm::vec3(0.0f,-1.0f,0.0f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f)) *glm::scale(mat4(1.0f), glm::vec3(0.5f)),
+        glm::translate(mat4(1.0f),glm::vec3(-3.0f,1.0f,-4.75f))*glm::rotate(mat4(1.0f),glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f)),
+    };
+
+    glBindBuffer(GL_ARRAY_BUFFER, arrowModelMatrixBufferId_);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4)*2, arrowModelMatrices);
+
+
+    mat4 planeModelMatrices[] = {
+        glm::translate(mat4(1.0f),glm::vec3(-1.0f,-1.3f,-3.0f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f)),
+        
+    };
+
+    glBindBuffer(GL_ARRAY_BUFFER, planeModelMatrixBufferId_);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), planeModelMatrices);
 }
 
 void GLWindow::keyPressEvent(QKeyEvent *event){
@@ -443,7 +492,8 @@ void GLWindow::initializeGL(){
         std::cerr << "Shader program OK, id=" << programId_ << "\n";
     }
     
-    updateFullTransformMartix();
+    updateFullTransformMatrix();
+    updateModelMatrix();
     
     update(); // 触发首帧 paintGL（静态立方体也要重绘一次）
 }
@@ -482,13 +532,29 @@ void GLWindow::paintGL()
     // if(uniformLightPositionLocation < 0){
     //     std::cerr<<"lightPosition uniform not found"<<std::endl;
     // }
-    glm::vec3 lightPosition = glm::vec3(0.0f, 2.0f, 0.0f);
+    glm::vec3 lightPosition = glm::vec3(0.0f, 3.0f, 0.0f);
     if(uniformLightPositionLocation >= 0){
         glUniform3fv(uniformLightPositionLocation, 1, &lightPosition[0]);
     }
+
+    GLint uniformViewMatrixLocation = glGetUniformLocation(programId_, "viewMatrix");
+    if(uniformViewMatrixLocation < 0){
+        std::cerr<<"viewMatrix uniform not found"<<std::endl;
+    }
+    mat4 worldToViewMartix = camera_.getWorldToViewMartix();
+    glUniformMatrix4fv(uniformViewMatrixLocation, 1, GL_FALSE, &worldToViewMartix[0][0]);
+    
+    
+    GLint uniformProjectionMatrixLocation = glGetUniformLocation(programId_, "projectionMatrix");
+    if(uniformProjectionMatrixLocation < 0){
+        std::cerr<<"projectionMatrix uniform not found"<<std::endl;
+    }
+    mat4 projectMartix = glm::perspective(glm::radians(90.0f),(float)width()/height(),0.1f,20.0f);
+    glUniformMatrix4fv(uniformProjectionMatrixLocation, 1, GL_FALSE, &projectMartix[0][0]);
     
     glBindVertexArray(cubeVaoId_);
-    bindFullTransformMartixToVao(cubeVaoId_, cubeFullTransformMartixBufferId_);
+    // bindFullTransformMartixToVao(cubeVaoId_, cubeFullTransformMartixBufferId_);
+    bindModelMatrixToVao(cubeVaoId_, cubeModelMatrixBufferId_);
 
     //注意 矩阵作用的顺序是 ： 旋转后，再平移，最后投影
     //所以创建顺序可以这样写，避免多做一些不必要的乘法运算
@@ -519,12 +585,14 @@ void GLWindow::paintGL()
 
     // glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, nullptr);
 
-    updateFullTransformMartix();
+    // updateFullTransformMatrix();
     // glDrawElementsInstanced(GL_TRIANGLES, cubeIndexCount_, GL_UNSIGNED_SHORT, nullptr, 2);
+    updateModelMatrix();
 
     glBindVertexArray(arrowVaoId_);
-    bindFullTransformMartixToVao(arrowVaoId_, arrowFullTransformMartixBufferId_);
-    // glDrawElementsInstanced(GL_TRIANGLES, arrowIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)), 1);
+    // bindFullTransformMartixToVao(arrowVaoId_, arrowFullTransformMartixBufferId_);
+    bindModelMatrixToVao(arrowVaoId_, arrowModelMatrixBufferId_);
+    glDrawElementsInstanced(GL_TRIANGLES, arrowIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)), 2);
     // glDrawElementsInstanced(
     //     GL_LINES, 
     //     arrowNormalLineIndexCount_, 
@@ -533,7 +601,8 @@ void GLWindow::paintGL()
     //     1);
 
     glBindVertexArray(planeVaoId_);
-    bindFullTransformMartixToVao(planeVaoId_, planeFullTransformMartixBufferId_);
+    // bindFullTransformMartixToVao(planeVaoId_, planeFullTransformMartixBufferId_);
+    bindModelMatrixToVao(planeVaoId_, planeModelMatrixBufferId_);
     glDrawElementsInstanced(GL_TRIANGLES, planeIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)+arrowIndexCount_*sizeof(GLushort)), 1);
     // glDrawElementsInstanced(
     //     GL_LINES,

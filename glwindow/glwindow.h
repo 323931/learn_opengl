@@ -38,7 +38,9 @@ protected:
 private:
     void configVao(GLuint vaoId, GLuint vboId, GLuint indexBufferId);
     void bindFullTransformMartixToVao(GLuint vaoId, GLuint bufferId);
-    void updateFullTransformMartix();
+    void updateFullTransformMatrix();
+    void bindModelMatrixToVao(GLuint vaoId, GLuint bufferId);
+    void updateModelMatrix();
     void installShaders();
     QString readShaderCode(const QString& path);
 
@@ -48,18 +50,21 @@ private:
     GLuint cubeVboId_ = 0;
     GLuint cubeIndexBufferId_ = 0;
     GLuint cubeFullTransformMartixBufferId_ = 0;
+    GLuint cubeModelMatrixBufferId_ = 0;
     GLuint cubeIndexCount_ = 0;
     //aroow
     GLuint arrowVaoId_ = 0;
     GLuint arrowVboId_ = 0;
     GLuint arrowIndexBufferId_ = 0;
     GLuint arrowFullTransformMartixBufferId_ = 0;
+    GLuint arrowModelMatrixBufferId_ = 0;
     GLsizei arrowIndexCount_ = 0;
     //arrow normal line
     GLuint arrowNormalLineIndexCount_ = 0;
     //plane
     GLuint planeVaoId_ = 0;
     GLuint planeFullTransformMartixBufferId_ = 0;
+    GLuint planeModelMatrixBufferId_ = 0;
     GLuint planeIndexCount_ = 0;
     //plane normal line
     GLuint planeNormalLineIndexCount_ = 0;
