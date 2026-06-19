@@ -18,6 +18,11 @@ public:
     void moveForward(float amount);
     void moveRight(float amount);
     void moveUp(float amount);
+    void printCameraInfo();
+    glm::vec3 getPosition();
+    glm::vec3 getViewDirection() const;
+    glm::vec3 getUpDirection() const;
+    glm::vec3 getRightDirection() const;
 private:
     glm::vec3 position;
     glm::vec3 viewDirection;

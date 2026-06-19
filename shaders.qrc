@@ -2,5 +2,6 @@
     <qresource prefix="/">
         <file>shaders/vertexshader.vert</file>
         <file>shaders/fragmentshader.frag</file>
+        <file>shaders/throughColorFragmentshader.frag</file>
     </qresource>
 </RCC>

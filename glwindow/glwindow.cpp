@@ -64,6 +64,7 @@ bool GLWindow::checkShaderLink(GLuint programId){
 }
 
 void GLWindow::sendDataToOpengl(){
+    //第二个cube我们作为灯
     ShapeData cube = ShapeGenerator::createCube();
     ShapeData arrow =  ShapeGenerator::createArrow();
     ShapeData plane = ShapeGenerator::createPlane(20);
@@ -164,23 +165,13 @@ void GLWindow::sendDataToOpengl(){
 
     glBindVertexArray(0);
 
-    glGenBuffers(1, &cubeFullTransformMartixBufferId_);
-    glBindBuffer(GL_ARRAY_BUFFER, cubeFullTransformMartixBufferId_);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4)*2, nullptr, GL_DYNAMIC_DRAW);
-
-
-    glGenBuffers(1, &arrowFullTransformMartixBufferId_);
-    glBindBuffer(GL_ARRAY_BUFFER, arrowFullTransformMartixBufferId_);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
-
-    glGenBuffers(1, &planeFullTransformMartixBufferId_);
-    glBindBuffer(GL_ARRAY_BUFFER, planeFullTransformMartixBufferId_);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
-
     glGenBuffers(1, &cubeModelMatrixBufferId_);
     glBindBuffer(GL_ARRAY_BUFFER, cubeModelMatrixBufferId_);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4)*2, nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
 
+    glGenBuffers(1, &lightModelMatrixBufferId_);
+    glBindBuffer(GL_ARRAY_BUFFER, lightModelMatrixBufferId_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
 
     glGenBuffers(1, &arrowModelMatrixBufferId_);
     glBindBuffer(GL_ARRAY_BUFFER, arrowModelMatrixBufferId_);
@@ -422,12 +413,17 @@ void GLWindow::updateFullTransformMatrix(){
 }
 
 void GLWindow::updateModelMatrix(){
-    mat4 CubeModelMatrices[] = {
-        glm::translate(mat4(1.0f),glm::vec3(-2.8f,0.0f,-6.5f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f)),
-        glm::translate(mat4(1.0f),glm::vec3(2.8f,0.0f,-6.75f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(-1.0f,1.0f,0.0f)),
-    };
+    mat4 cubeModelMatrix =
+        glm::translate(mat4(1.0f),glm::vec3(-2.8f,0.0f,-6.5f))
+        * glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f));
     glBindBuffer(GL_ARRAY_BUFFER, cubeModelMatrixBufferId_);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4)*2, CubeModelMatrices   );
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), &cubeModelMatrix);
+
+    mat4 lightModelMatrix =
+        glm::translate(mat4(1.0f),glm::vec3(0.0f,3.0f,0.0f))
+        * glm::scale(mat4(1.0f), glm::vec3(0.2f,0.2f,0.2f));
+    glBindBuffer(GL_ARRAY_BUFFER, lightModelMatrixBufferId_);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), &lightModelMatrix);
 
     mat4 arrowModelMatrices[] = {
         glm::translate(mat4(1.0f),glm::vec3(0.0f,-1.0f,0.0f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f)) *glm::scale(mat4(1.0f), glm::vec3(0.5f)),
@@ -468,6 +464,9 @@ void GLWindow::keyPressEvent(QKeyEvent *event){
         case Qt::Key_E:
             camera_.moveUp(-amount);
             break;
+        case Qt::Key_P:
+            camera_.printCameraInfo();
+            break;
         default:
             break;
     };
@@ -485,6 +484,8 @@ void GLWindow::initializeGL(){
 
     installShaders();
     sendDataToOpengl();
+    getUniformLocationInShaderForProgram(programId_);
+    getUniformLocationInShaderForProgram(throughColorProgramId_);
 
     if (programId_ == 0) {
         std::cerr << "Shader program not ready — check compile/link messages above\n";
@@ -492,7 +493,6 @@ void GLWindow::initializeGL(){
         std::cerr << "Shader program OK, id=" << programId_ << "\n";
     }
     
-    updateFullTransformMatrix();
     updateModelMatrix();
     
     update(); // 触发首帧 paintGL（静态立方体也要重绘一次）
@@ -508,90 +508,44 @@ void GLWindow::paintGL()
     glViewport(0, 0, width(), height());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    mat4 worldToViewMartix = camera_.getWorldToViewMartix();
+    mat4 projectMartix = glm::perspective(glm::radians(90.0f),(float)width()/height(),0.1f,20.0f);
+    updateModelMatrix();
+
+    glUseProgram(throughColorProgramId_);
+    glUniformMatrix4fv(colorViewMatrixLocation_, 1, GL_FALSE, &worldToViewMartix[0][0]);
+    glUniformMatrix4fv(colorProjectionMatrixLocation_, 1, GL_FALSE, &projectMartix[0][0]);
+
+    glBindVertexArray(cubeVaoId_);
+    bindModelMatrixToVao(cubeVaoId_, lightModelMatrixBufferId_);
+    glDrawElementsInstanced(GL_TRIANGLES, cubeIndexCount_, GL_UNSIGNED_SHORT, nullptr, 1);
+
     glUseProgram(programId_);
 
-    GLint uniformAmbientLightLocation =  glGetUniformLocation(programId_, "ambientLight");
-    // if(uniformAmbientLightLocation < 0){
-    //     std::cerr<<"ambientLight uniform not found"<<std::endl;
-    // }
     glm::vec3 ambientLight = glm::vec3(0.08f, 0.07f, 0.06f);
-    if(uniformAmbientLightLocation >= 0){
-        glUniform3fv(uniformAmbientLightLocation,1, &ambientLight[0]);
+    if(uniformAmbientLightLocation_ >= 0){
+        glUniform3fv(uniformAmbientLightLocation_,1, &ambientLight[0]);
     }
 
-    GLint uniformLightDirectionLocation = glGetUniformLocation(programId_, "lightDirection");
-    // if(uniformLightDirectionLocation < 0){
-    //     std::cerr<<"lightDirection uniform not found"<<std::endl;
-    // }
-    glm::vec3 lightDirection = glm::normalize(glm::vec3(0.0f, -1.0f, 0.0f));
-    if(uniformLightDirectionLocation >= 0){
-        glUniform3fv(uniformLightDirectionLocation, 1, &lightDirection[0]);
-    }
-
-    GLint uniformLightPositionLocation = glGetUniformLocation(programId_, "lightPosition");
-    // if(uniformLightPositionLocation < 0){
-    //     std::cerr<<"lightPosition uniform not found"<<std::endl;
-    // }
     glm::vec3 lightPosition = glm::vec3(0.0f, 3.0f, 0.0f);
-    if(uniformLightPositionLocation >= 0){
-        glUniform3fv(uniformLightPositionLocation, 1, &lightPosition[0]);
+    if(uniformLightPositionLocation_ >= 0){
+        glUniform3fv(uniformLightPositionLocation_, 1, &lightPosition[0]);
     }
 
-    GLint uniformViewMatrixLocation = glGetUniformLocation(programId_, "viewMatrix");
-    if(uniformViewMatrixLocation < 0){
-        std::cerr<<"viewMatrix uniform not found"<<std::endl;
+    glm::vec3 viewPositionWorld = camera_.getPosition();
+    if(uniformViewPositionWorldLocation_ >= 0){
+        glUniform3fv(uniformViewPositionWorldLocation_, 1, &viewPositionWorld[0]);
     }
-    mat4 worldToViewMartix = camera_.getWorldToViewMartix();
-    glUniformMatrix4fv(uniformViewMatrixLocation, 1, GL_FALSE, &worldToViewMartix[0][0]);
-    
-    
-    GLint uniformProjectionMatrixLocation = glGetUniformLocation(programId_, "projectionMatrix");
-    if(uniformProjectionMatrixLocation < 0){
-        std::cerr<<"projectionMatrix uniform not found"<<std::endl;
-    }
-    mat4 projectMartix = glm::perspective(glm::radians(90.0f),(float)width()/height(),0.1f,20.0f);
-    glUniformMatrix4fv(uniformProjectionMatrixLocation, 1, GL_FALSE, &projectMartix[0][0]);
 
-    updateModelMatrix();
-    
+    glUniformMatrix4fv(uniformViewMatrixLocation_, 1, GL_FALSE, &worldToViewMartix[0][0]);
+
+    glUniformMatrix4fv(uniformProjectionMatrixLocation_, 1, GL_FALSE, &projectMartix[0][0]);
+
     glBindVertexArray(cubeVaoId_);
-    // bindFullTransformMartixToVao(cubeVaoId_, cubeFullTransformMartixBufferId_);
     bindModelMatrixToVao(cubeVaoId_, cubeModelMatrixBufferId_);
-
-    //注意 矩阵作用的顺序是 ： 旋转后，再平移，最后投影
-    //所以创建顺序可以这样写，避免多做一些不必要的乘法运算
-    // GLint fullTransformMartixLocation = glGetUniformLocation(programId_, "fullTransformMartix");
-    // if (fullTransformMartixLocation < 0) {
-    //     std::cerr << "fullTransformMartix uniform not found — run cmake --build after editing shader\n";
-    //     return;
-    // }
-
-    // mat4 fullTransformMartix;
-    // mat4 projectionMartix = glm::perspective(glm::radians(60.0f), (float)width() / height(), 0.1f, 10.0f);
-
-    // //first cude
-    // mat4 projectTransformMatrix = glm::translate(glm::mat4(1.0f),glm::vec3(-1.0f, 0.0f, -3.0f));
-    // mat4 rotateMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(36.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    // fullTransformMartix = projectionMartix * projectTransformMatrix * rotateMatrix;
-
-    // glUniformMatrix4fv(fullTransformMartixLocation, 1, GL_FALSE, &fullTransformMartix[0][0]);
-    // glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, nullptr);
-    
-
-    // //second cude    
-    // projectTransformMatrix = glm::translate(glm::mat4(1.0f),glm::vec3(1.0f, 0.0f, -3.75f));
-    // rotateMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(126.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    // fullTransformMartix = projectionMartix * projectTransformMatrix * rotateMatrix;
-
-    // glUniformMatrix4fv(fullTransformMartixLocation, 1, GL_FALSE, &fullTransformMartix[0][0]);
-
-    // glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, nullptr);
-
-    // updateFullTransformMatrix();
-    glDrawElementsInstanced(GL_TRIANGLES, cubeIndexCount_, GL_UNSIGNED_SHORT, nullptr, 2);
+    glDrawElementsInstanced(GL_TRIANGLES, cubeIndexCount_, GL_UNSIGNED_SHORT, nullptr, 1);
 
     glBindVertexArray(arrowVaoId_);
-    // bindFullTransformMartixToVao(arrowVaoId_, arrowFullTransformMartixBufferId_);
     bindModelMatrixToVao(arrowVaoId_, arrowModelMatrixBufferId_);
     glDrawElementsInstanced(GL_TRIANGLES, arrowIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)), 2);
     // glDrawElementsInstanced(
@@ -602,7 +556,6 @@ void GLWindow::paintGL()
     //     1);
 
     glBindVertexArray(planeVaoId_);
-    // bindFullTransformMartixToVao(planeVaoId_, planeFullTransformMartixBufferId_);
     bindModelMatrixToVao(planeVaoId_, planeModelMatrixBufferId_);
     glDrawElementsInstanced(GL_TRIANGLES, planeIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)+arrowIndexCount_*sizeof(GLushort)), 1);
     // glDrawElementsInstanced(
@@ -620,6 +573,37 @@ void GLWindow::paintGL()
     }    
 }
 
+void GLWindow::getUniformLocationInShaderForProgram(GLuint program){
+   if(program == programId_){
+        uniformAmbientLightLocation_ =  glGetUniformLocation(programId_, "ambientLight");
+        // if(uniformAmbientLightLocation_ < 0){
+        //     std::cerr<<"ambientLight uniform not found"<<std::endl;
+        // }
+
+        uniformLightPositionLocation_ = glGetUniformLocation(programId_, "lightPosition");
+        // if(uniformLightPositionLocation < 0){
+        //     std::cerr<<"lightPosition uniform not found"<<std::endl;
+        // }
+
+        uniformViewMatrixLocation_ = glGetUniformLocation(programId_, "viewMatrix");
+        // if(uniformViewMatrixLocation_ < 0){
+        //     std::cerr<<"viewMatrix uniform not found"<<std::endl;
+        // }
+
+        uniformProjectionMatrixLocation_ = glGetUniformLocation(programId_, "projectionMatrix");
+        // if(uniformProjectionMatrixLocation_ < 0){
+        //     std::cerr<<"projectionMatrix uniform not found"<<std::endl;
+        // }
+
+        uniformViewPositionWorldLocation_ = glGetUniformLocation(programId_, "viewPositionWorld");
+    }
+
+    if(program == throughColorProgramId_){
+        colorViewMatrixLocation_ = glGetUniformLocation(throughColorProgramId_, "viewMatrix");
+        colorProjectionMatrixLocation_ = glGetUniformLocation(throughColorProgramId_, "projectionMatrix");
+    }
+}
+
 QString GLWindow::readShaderCode(const QString& path)
 {
     QFile file(path);
@@ -633,24 +617,28 @@ void GLWindow::installShaders()
 {
     const GLuint vertexShaderId = glCreateShader(GL_VERTEX_SHADER);
     const GLuint fragmentShaderId = glCreateShader(GL_FRAGMENT_SHADER);
+    const GLuint throughColorFragmentShaderId = glCreateShader(GL_FRAGMENT_SHADER);
 
     const QByteArray vertexSource = readShaderCode(":/shaders/vertexshader.vert").toUtf8();
     const QByteArray fragmentSource = readShaderCode(":/shaders/fragmentshader.frag").toUtf8();
+    const QByteArray throughColorFragmentSource = readShaderCode(":/shaders/throughColorFragmentshader.frag").toUtf8();
 
-    if (vertexSource.isEmpty() || fragmentSource.isEmpty()) {
+    if (vertexSource.isEmpty() || fragmentSource.isEmpty() || throughColorFragmentSource.isEmpty()) {
         std::cerr << "Failed to load shader files from Qt resources\n";
         return;
     }
 
     const char* vertexPtr = vertexSource.constData();
     const char* fragmentPtr = fragmentSource.constData();
+    const char* throughColorFragmentPtr = throughColorFragmentSource.constData();
     glShaderSource(vertexShaderId, 1, &vertexPtr, nullptr);
     glShaderSource(fragmentShaderId, 1, &fragmentPtr, nullptr);
-
+    glShaderSource(throughColorFragmentShaderId, 1, &throughColorFragmentPtr, nullptr);
     glCompileShader(vertexShaderId);
     glCompileShader(fragmentShaderId);
+    glCompileShader(throughColorFragmentShaderId);
 
-    if(!checkShaderCompile(vertexShaderId) || !checkShaderCompile(fragmentShaderId)){
+    if(!checkShaderCompile(vertexShaderId) || !checkShaderCompile(fragmentShaderId) || !checkShaderCompile(throughColorFragmentShaderId)){
         std::cerr << "Failed to compile shader\n";
         return;
     }
@@ -660,21 +648,48 @@ void GLWindow::installShaders()
     glAttachShader(programId_, fragmentShaderId);
     glLinkProgram(programId_);
 
-    if(!checkShaderLink(programId_)){
+    throughColorProgramId_ = glCreateProgram();
+    glAttachShader(throughColorProgramId_, vertexShaderId);
+    glAttachShader(throughColorProgramId_, throughColorFragmentShaderId);
+    glLinkProgram(throughColorProgramId_);
+
+    if(!checkShaderLink(programId_) || !checkShaderLink(throughColorProgramId_)){
         std::cerr << "Failed to link shader\n";
         exit(EXIT_FAILURE);
     }
 
-    glUseProgram(programId_);
-
+    // glUseProgram(programId_);
+    glUseProgram(throughColorProgramId_);
     glDeleteShader(vertexShaderId);
     glDeleteShader(fragmentShaderId);
+    glDeleteShader(throughColorFragmentShaderId);
 }
 
 GLWindow::~GLWindow(){
+    makeCurrent();
+
     glDeleteProgram(programId_);
-    glDeleteVertexArrays(1, &cubeVaoId_);
-    glDeleteBuffers(1, &cubeVboId_);
-    glDeleteBuffers(1, &cubeIndexBufferId_);
-    glDeleteBuffers(1, &cubeFullTransformMartixBufferId_);
+    glDeleteProgram(throughColorProgramId_);
+
+    GLuint vaos[] = { cubeVaoId_, arrowVaoId_, planeVaoId_ };
+    glDeleteVertexArrays(3, vaos);
+
+    GLuint buffers[] = {
+        cubeVboId_,
+        cubeIndexBufferId_,
+        cubeFullTransformMartixBufferId_,
+        arrowVboId_,
+        arrowIndexBufferId_,
+        arrowFullTransformMartixBufferId_,
+        planeFullTransformMartixBufferId_,
+        totalVboId_,
+        totalIndexBufferId_,
+        cubeModelMatrixBufferId_,
+        lightModelMatrixBufferId_,
+        arrowModelMatrixBufferId_,
+        planeModelMatrixBufferId_
+    };
+    glDeleteBuffers(sizeof(buffers) / sizeof(buffers[0]), buffers);
+
+    doneCurrent();
 }

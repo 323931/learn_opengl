@@ -26,6 +26,9 @@ protected:
     void initializeGL() override;
     void resizeGL(int w, int h) override;
     void paintGL() override;
+
+    void getUniformLocationInShaderForProgram(GLuint programId);
+
     void mouseMoveEvent(QMouseEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void sendDataToOpengl();
@@ -45,12 +48,14 @@ private:
     QString readShaderCode(const QString& path);
 
     GLuint programId_ = 0;
+    GLuint throughColorProgramId_ = 0;
     //cube 
     GLuint cubeVaoId_ = 0;
     GLuint cubeVboId_ = 0;
     GLuint cubeIndexBufferId_ = 0;
     GLuint cubeFullTransformMartixBufferId_ = 0;
     GLuint cubeModelMatrixBufferId_ = 0;
+    GLuint lightModelMatrixBufferId_ = 0;
     GLuint cubeIndexCount_ = 0;
     //aroow
     GLuint arrowVaoId_ = 0;
@@ -73,6 +78,15 @@ private:
     GLuint totalVboId_ = 0;
     GLuint totalIndexBufferId_ = 0;
 
+    //uniform location
+    GLint uniformAmbientLightLocation_ = -1;
+    GLint uniformLightPositionLocation_ = -1;
+    GLint uniformViewMatrixLocation_ = -1;
+    GLint uniformProjectionMatrixLocation_ = -1;
+    GLint uniformViewPositionWorldLocation_ = -1;
+
+    GLint colorViewMatrixLocation_ = -1;
+    GLint colorProjectionMatrixLocation_ = -1;
 private:
     const float per_step = 0.1f;
     int triangle_num = 0;

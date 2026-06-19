@@ -1,9 +1,9 @@
 #include "camera.h"
 #include <glm/geometric.hpp>
-
+#include <iostream>
 Camera::Camera()
-    : position(0.0f, 0.0f, 0.0f), 
-    viewDirection(0.0f, 0.0f, -1.0f), 
+    : position(-7.76914f, 1.59395f, -2.79f), 
+    viewDirection(0.98f, -0.16f, 0.0288f), 
     upDirection(0.0f, 1.0f, 0.0f){
 }
 
@@ -62,4 +62,28 @@ void Camera::moveRight(float amount){
 
 void Camera::moveUp(float amount){
     position += upDirection * amount;
+}
+
+void Camera::printCameraInfo(){
+    std::cout << "position: " << position.x << " " << position.y << " " << position.z << std::endl;
+    std::cout << "viewDirection: " << viewDirection.x << " " << viewDirection.y << " " << viewDirection.z << std::endl;
+    std::cout << "upDirection: " << upDirection.x << " " << upDirection.y << " " << upDirection.z << std::endl;
+    glm::vec3 rightDirection = getRightDirection();
+    std::cout << "rightDirection: " << rightDirection.x << " " << rightDirection.y << " " << rightDirection.z << std::endl;
+}
+
+glm::vec3 Camera::getPosition() {
+    return position;
+}
+
+glm::vec3 Camera::getViewDirection() const{
+    return viewDirection;
+}
+
+glm::vec3 Camera::getUpDirection() const{
+    return upDirection;
+}
+
+glm::vec3 Camera::getRightDirection() const{
+    return glm::normalize(glm::cross(viewDirection,upDirection));
 }
