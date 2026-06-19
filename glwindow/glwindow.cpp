@@ -64,7 +64,7 @@ bool GLWindow::checkShaderLink(GLuint programId){
 }
 
 void GLWindow::sendDataToOpengl(){
-    ShapeData cube = ShapeGenerator::loadModel("models/teapot.obj",0.03f);
+    ShapeData cube = ShapeGenerator::createCube();
     ShapeData arrow =  ShapeGenerator::createArrow();
     ShapeData plane = ShapeGenerator::createPlane(20);
     ShapeData arrowNormalLine = ShapeGenerator::createNormalLine(arrow);
@@ -514,7 +514,7 @@ void GLWindow::paintGL()
     // if(uniformAmbientLightLocation < 0){
     //     std::cerr<<"ambientLight uniform not found"<<std::endl;
     // }
-    glm::vec3 ambientLight = glm::vec3(0.2f, 0.2f, 0.2f);
+    glm::vec3 ambientLight = glm::vec3(0.08f, 0.07f, 0.06f);
     if(uniformAmbientLightLocation >= 0){
         glUniform3fv(uniformAmbientLightLocation,1, &ambientLight[0]);
     }
@@ -551,6 +551,8 @@ void GLWindow::paintGL()
     }
     mat4 projectMartix = glm::perspective(glm::radians(90.0f),(float)width()/height(),0.1f,20.0f);
     glUniformMatrix4fv(uniformProjectionMatrixLocation, 1, GL_FALSE, &projectMartix[0][0]);
+
+    updateModelMatrix();
     
     glBindVertexArray(cubeVaoId_);
     // bindFullTransformMartixToVao(cubeVaoId_, cubeFullTransformMartixBufferId_);
@@ -586,8 +588,7 @@ void GLWindow::paintGL()
     // glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, nullptr);
 
     // updateFullTransformMatrix();
-    // glDrawElementsInstanced(GL_TRIANGLES, cubeIndexCount_, GL_UNSIGNED_SHORT, nullptr, 2);
-    updateModelMatrix();
+    glDrawElementsInstanced(GL_TRIANGLES, cubeIndexCount_, GL_UNSIGNED_SHORT, nullptr, 2);
 
     glBindVertexArray(arrowVaoId_);
     // bindFullTransformMartixToVao(arrowVaoId_, arrowFullTransformMartixBufferId_);
