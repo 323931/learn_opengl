@@ -99,5 +99,5 @@ private:
 
 private:
     Camera camera_;
-    glm::vec3 lightPosition_ = glm::vec3(0.0f, 3.0f, 0.0f);
+    glm::vec3 lightPosition_ = glm::vec3(0.0f, 4.5f, -3.5f);
 };

@@ -289,7 +289,8 @@ void ShapeGenerator::makePlaneVertex(ShapeData& data,int dimension){
             v.position.x = j-half;//-5 -4 -3 -2 -1 0 1 2 3 4 5
             v.position.z = i-half;//-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5
             v.position.y = 0.0f;
-            v.color = randomColor();
+            const bool alternateTile = ((i + j) % 2) == 0;
+            v.color = alternateTile ? vec3(0.34f, 0.36f, 0.34f) : vec3(0.42f, 0.43f, 0.40f);
             v.normal = vec3(0.0f, 1.0f, 0.0f);
         }
     }

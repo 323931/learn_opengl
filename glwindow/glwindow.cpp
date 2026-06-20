@@ -20,6 +20,12 @@
 
 using glm::mat4;
 
+namespace {
+constexpr GLsizei kSceneCubeCount = 6;
+constexpr GLsizei kSceneArrowCount = 3;
+constexpr float kFloorY = -1.3f;
+}
+
 GLWindow::GLWindow(QWidget* parent)
     : QOpenGLWidget(parent)
 {
@@ -78,7 +84,7 @@ void GLWindow::sendDataToOpengl(){
     //第二个cube我们作为灯
     ShapeData cube = ShapeGenerator::createCube();
     ShapeData arrow =  ShapeGenerator::createArrow();
-    ShapeData plane = ShapeGenerator::createPlane(20);
+    ShapeData plane = ShapeGenerator::createPlane(32);
     ShapeData arrowNormalLine = ShapeGenerator::createNormalLine(arrow);
     ShapeData planeNormalLine = ShapeGenerator::createNormalLine(plane);
 
@@ -178,7 +184,7 @@ void GLWindow::sendDataToOpengl(){
 
     glGenBuffers(1, &cubeModelMatrixBufferId_);
     glBindBuffer(GL_ARRAY_BUFFER, cubeModelMatrixBufferId_);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4) * kSceneCubeCount, nullptr, GL_DYNAMIC_DRAW);
 
     glGenBuffers(1, &lightModelMatrixBufferId_);
     glBindBuffer(GL_ARRAY_BUFFER, lightModelMatrixBufferId_);
@@ -186,7 +192,7 @@ void GLWindow::sendDataToOpengl(){
 
     glGenBuffers(1, &arrowModelMatrixBufferId_);
     glBindBuffer(GL_ARRAY_BUFFER, arrowModelMatrixBufferId_);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4)*2, nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4) * kSceneArrowCount, nullptr, GL_DYNAMIC_DRAW);
 
     glGenBuffers(1, &planeModelMatrixBufferId_);
     glBindBuffer(GL_ARRAY_BUFFER, planeModelMatrixBufferId_);
@@ -424,11 +430,27 @@ void GLWindow::updateFullTransformMatrix(){
 }
 
 void GLWindow::updateModelMatrix(){
-    mat4 cubeModelMatrix =
-        glm::translate(mat4(1.0f),glm::vec3(-2.8f,0.0f,-6.5f))
-        * glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f));
+    mat4 cubeModelMatrices[] = {
+        glm::translate(mat4(1.0f),glm::vec3(0.0f,kFloorY + 0.35f,-4.6f))
+            * glm::scale(mat4(1.0f), glm::vec3(1.35f,0.35f,1.35f)),
+        glm::translate(mat4(1.0f),glm::vec3(-3.2f,kFloorY + 1.4f,-5.6f))
+            * glm::rotate(mat4(1.0f),glm::radians(12.0f),glm::vec3(0.0f,1.0f,0.0f))
+            * glm::scale(mat4(1.0f), glm::vec3(0.45f,1.4f,0.45f)),
+        glm::translate(mat4(1.0f),glm::vec3(3.2f,kFloorY + 1.1f,-5.2f))
+            * glm::rotate(mat4(1.0f),glm::radians(-16.0f),glm::vec3(0.0f,1.0f,0.0f))
+            * glm::scale(mat4(1.0f), glm::vec3(0.45f,1.1f,0.45f)),
+        glm::translate(mat4(1.0f),glm::vec3(-1.4f,kFloorY + 0.5f,-7.1f))
+            * glm::rotate(mat4(1.0f),glm::radians(20.0f),glm::vec3(0.0f,1.0f,0.0f))
+            * glm::scale(mat4(1.0f), glm::vec3(0.9f,0.5f,0.5f)),
+        glm::translate(mat4(1.0f),glm::vec3(1.8f,kFloorY + 0.45f,-7.3f))
+            * glm::rotate(mat4(1.0f),glm::radians(-25.0f),glm::vec3(0.0f,1.0f,0.0f))
+            * glm::scale(mat4(1.0f), glm::vec3(0.75f,0.45f,0.75f)),
+        glm::translate(mat4(1.0f),glm::vec3(-4.0f,kFloorY + 0.25f,-2.5f))
+            * glm::rotate(mat4(1.0f),glm::radians(35.0f),glm::vec3(0.0f,1.0f,0.0f))
+            * glm::scale(mat4(1.0f), glm::vec3(0.4f,0.25f,1.2f)),
+    };
     glBindBuffer(GL_ARRAY_BUFFER, cubeModelMatrixBufferId_);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), &cubeModelMatrix);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(cubeModelMatrices), cubeModelMatrices);
 
     mat4 lightModelMatrix =
         glm::translate(mat4(1.0f), lightPosition_)
@@ -437,17 +459,24 @@ void GLWindow::updateModelMatrix(){
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), &lightModelMatrix);
 
     mat4 arrowModelMatrices[] = {
-        glm::translate(mat4(1.0f),glm::vec3(0.0f,-1.0f,0.0f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f)) *glm::scale(mat4(1.0f), glm::vec3(0.5f)),
-        glm::translate(mat4(1.0f),glm::vec3(-3.0f,1.0f,-4.75f))*glm::rotate(mat4(1.0f),glm::radians(90.0f),glm::vec3(1.0f,0.0f,0.0f)),
+        glm::translate(mat4(1.0f),glm::vec3(0.0f,kFloorY + 1.25f,-4.6f))
+            * glm::rotate(mat4(1.0f),glm::radians(25.0f),glm::vec3(0.0f,1.0f,0.0f))
+            * glm::rotate(mat4(1.0f),glm::radians(35.0f),glm::vec3(1.0f,0.0f,0.0f))
+            * glm::scale(mat4(1.0f), glm::vec3(1.55f)),
+        glm::translate(mat4(1.0f),glm::vec3(-3.6f,kFloorY + 0.32f,-3.6f))
+            * glm::rotate(mat4(1.0f),glm::radians(-25.0f),glm::vec3(0.0f,1.0f,0.0f))
+            * glm::scale(mat4(1.0f), glm::vec3(0.85f)),
+        glm::translate(mat4(1.0f),glm::vec3(3.4f,kFloorY + 0.32f,-4.0f))
+            * glm::rotate(mat4(1.0f),glm::radians(205.0f),glm::vec3(0.0f,1.0f,0.0f))
+            * glm::scale(mat4(1.0f), glm::vec3(0.75f)),
     };
 
     glBindBuffer(GL_ARRAY_BUFFER, arrowModelMatrixBufferId_);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4)*2, arrowModelMatrices);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(arrowModelMatrices), arrowModelMatrices);
 
 
     mat4 planeModelMatrices[] = {
-        glm::translate(mat4(1.0f),glm::vec3(-1.0f,-1.3f,-3.0f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f)),
-        
+        glm::translate(mat4(1.0f),glm::vec3(-1.0f,kFloorY,-4.0f)),
     };
 
     glBindBuffer(GL_ARRAY_BUFFER, planeModelMatrixBufferId_);
@@ -553,11 +582,11 @@ void GLWindow::paintGL()
 
     glBindVertexArray(cubeVaoId_);
     bindModelMatrixToVao(cubeVaoId_, cubeModelMatrixBufferId_);
-    glDrawElementsInstanced(GL_TRIANGLES, cubeIndexCount_, GL_UNSIGNED_SHORT, nullptr, 1);
+    glDrawElementsInstanced(GL_TRIANGLES, cubeIndexCount_, GL_UNSIGNED_SHORT, nullptr, kSceneCubeCount);
 
     glBindVertexArray(arrowVaoId_);
     bindModelMatrixToVao(arrowVaoId_, arrowModelMatrixBufferId_);
-    glDrawElementsInstanced(GL_TRIANGLES, arrowIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)), 2);
+    glDrawElementsInstanced(GL_TRIANGLES, arrowIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)), kSceneArrowCount);
     // glDrawElementsInstanced(
     //     GL_LINES, 
     //     arrowNormalLineIndexCount_, 

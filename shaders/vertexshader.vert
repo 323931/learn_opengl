@@ -11,6 +11,7 @@ uniform mat4 projectionMatrix;
 
 out vec3 theWorldNormal;
 out vec3 theWorldPosition;
+out vec3 theVertexColor;
 
 void main()
 {
@@ -19,4 +20,5 @@ void main()
     gl_Position = fullTransformMatrix * v;
     theWorldNormal = normalize(mat3(transpose(inverse(modelMatrix))) * vertexNormal);
     theWorldPosition = vec3(modelMatrix * v);
+    theVertexColor = vertexColor;
 }

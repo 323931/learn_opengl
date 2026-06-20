@@ -36,8 +36,8 @@ SceneWindow::SceneWindow(QWidget* parent)
     auto* controlLayout = new QHBoxLayout();
 
     xControls_ = createAxisControls("X", 0.0);
-    yControls_ = createAxisControls("Y", 3.0);
-    zControls_ = createAxisControls("Z", 0.0);
+    yControls_ = createAxisControls("Y", 4.5);
+    zControls_ = createAxisControls("Z", -3.5);
 
     controlLayout->addWidget(new QLabel("Light Position", this));
     controlLayout->addSpacing(12);
