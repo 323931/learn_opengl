@@ -30,6 +30,17 @@ GLWindow::GLWindow(QWidget* parent)
     setFocusPolicy(Qt::StrongFocus);
 }
 
+void GLWindow::setLightPosition(float x, float y, float z)
+{
+    lightPosition_ = glm::vec3(x, y, z);
+    update();
+}
+
+glm::vec3 GLWindow::lightPosition() const
+{
+    return lightPosition_;
+}
+
 bool GLWindow::checkStatus(GLuint objectId,
     void (QOpenGLFunctions_3_3_Core::*getStatusFunc)(GLuint, GLenum, GLint*),
     void (QOpenGLFunctions_3_3_Core::*getInfoLogFunc)(GLuint, GLsizei, GLsizei*, GLchar*),
@@ -420,8 +431,8 @@ void GLWindow::updateModelMatrix(){
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), &cubeModelMatrix);
 
     mat4 lightModelMatrix =
-        glm::translate(mat4(1.0f),glm::vec3(0.0f,3.0f,0.0f))
-        * glm::scale(mat4(1.0f), glm::vec3(0.2f,0.2f,0.2f));
+        glm::translate(mat4(1.0f), lightPosition_)
+        * glm::scale(mat4(1.0f), glm::vec3(0.1f,0.1f,0.1f));
     glBindBuffer(GL_ARRAY_BUFFER, lightModelMatrixBufferId_);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), &lightModelMatrix);
 
@@ -527,9 +538,8 @@ void GLWindow::paintGL()
         glUniform3fv(uniformAmbientLightLocation_,1, &ambientLight[0]);
     }
 
-    glm::vec3 lightPosition = glm::vec3(0.0f, 3.0f, 0.0f);
     if(uniformLightPositionLocation_ >= 0){
-        glUniform3fv(uniformLightPositionLocation_, 1, &lightPosition[0]);
+        glUniform3fv(uniformLightPositionLocation_, 1, &lightPosition_[0]);
     }
 
     glm::vec3 viewPositionWorld = camera_.getPosition();

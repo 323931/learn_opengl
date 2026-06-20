@@ -6,6 +6,7 @@
 #include <QOpenGLFunctions_3_3_Core>
 
 #include <camera.h>
+#include <glm/glm.hpp>
 
 class QKeyEvent;
 class QMouseEvent;
@@ -16,6 +17,8 @@ class GLWindow : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
 
 public:
     explicit GLWindow(QWidget* parent = nullptr);
+    void setLightPosition(float x, float y, float z);
+    glm::vec3 lightPosition() const;
     bool checkStatus(GLuint objectId,
                      void (QOpenGLFunctions_3_3_Core::*getStatusFunc)(GLuint, GLenum, GLint*),
                      void (QOpenGLFunctions_3_3_Core::*getInfoLogFunc)(GLuint, GLsizei, GLsizei*, GLchar*),
@@ -96,4 +99,5 @@ private:
 
 private:
     Camera camera_;
+    glm::vec3 lightPosition_ = glm::vec3(0.0f, 3.0f, 0.0f);
 };

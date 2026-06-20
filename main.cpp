@@ -1,4 +1,4 @@
-#include "glwindow.h"
+#include "scenewindow.h"
 
 #include <QApplication>
 #include <QMainWindow>
@@ -17,8 +17,8 @@ int main(int argc, char* argv[])
     window.setWindowTitle("OpenGL Episode 5 - Hello Triangle");
     window.resize(800, 600);
 
-    auto* glWidget = new GLWindow(&window);
-    window.setCentralWidget(glWidget);
+    auto* sceneWindow = new SceneWindow(&window);
+    window.setCentralWidget(sceneWindow);
 
     window.show();
     return app.exec();
