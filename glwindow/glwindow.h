@@ -7,6 +7,7 @@
 
 #include <camera.h>
 #include <glm/glm.hpp>
+#include <renderer.h>
 
 class QKeyEvent;
 class QMouseEvent;
@@ -98,6 +99,7 @@ private:
     int byte_size_per_triangle = vertex_num_per_triangle*float_num_per_vertex*sizeof(float);
 
 private:
+    Renderer renderer_;
     Camera camera_;
     glm::vec3 lightPosition_ = glm::vec3(0.0f, 4.5f, -3.5f);
 };

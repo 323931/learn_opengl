@@ -1,4 +1,5 @@
 #include "glwindow.h"
+#include "renderer.h"
 #include "shapedata.h"
 #include "vertex.h"
 
@@ -556,9 +557,14 @@ void GLWindow::paintGL()
     glUniformMatrix4fv(colorViewMatrixLocation_, 1, GL_FALSE, &worldToViewMartix[0][0]);
     glUniformMatrix4fv(colorProjectionMatrixLocation_, 1, GL_FALSE, &projectMartix[0][0]);
 
-    glBindVertexArray(cubeVaoId_);
-    bindModelMatrixToVao(cubeVaoId_, lightModelMatrixBufferId_);
-    glDrawElementsInstanced(GL_TRIANGLES, cubeIndexCount_, GL_UNSIGNED_SHORT, nullptr, 1);
+    renderer_.drawInstanced(*this, DrawCommand{
+        cubeVaoId_,
+        lightModelMatrixBufferId_,
+        static_cast<GLsizei>(cubeIndexCount_),
+        GL_UNSIGNED_SHORT,
+        nullptr,
+        1
+    });
 
     glUseProgram(programId_);
 
@@ -580,13 +586,35 @@ void GLWindow::paintGL()
 
     glUniformMatrix4fv(uniformProjectionMatrixLocation_, 1, GL_FALSE, &projectMartix[0][0]);
 
-    glBindVertexArray(cubeVaoId_);
-    bindModelMatrixToVao(cubeVaoId_, cubeModelMatrixBufferId_);
-    glDrawElementsInstanced(GL_TRIANGLES, cubeIndexCount_, GL_UNSIGNED_SHORT, nullptr, kSceneCubeCount);
+    renderer_.drawInstanced(*this, DrawCommand{
+        cubeVaoId_,
+        cubeModelMatrixBufferId_,
+        static_cast<GLsizei>(cubeIndexCount_),
+        GL_UNSIGNED_SHORT,
+        nullptr,
+        kSceneCubeCount
+    });
 
-    glBindVertexArray(arrowVaoId_);
-    bindModelMatrixToVao(arrowVaoId_, arrowModelMatrixBufferId_);
-    glDrawElementsInstanced(GL_TRIANGLES, arrowIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)), kSceneArrowCount);
+    //draw arrow 
+    renderer_.drawInstanced(*this, DrawCommand{
+        arrowVaoId_,
+        arrowModelMatrixBufferId_,
+        arrowIndexCount_,
+        GL_UNSIGNED_SHORT,
+        reinterpret_cast<void*>(cubeIndexCount_ * sizeof(GLushort)),
+        kSceneArrowCount
+    });
+
+    renderer_.drawNormalLineInstanced(*this, DrawCommand{
+        arrowVaoId_,
+        arrowModelMatrixBufferId_,
+        static_cast<GLsizei>(arrowNormalLineIndexCount_),
+        GL_UNSIGNED_SHORT,
+        reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_) * sizeof(GLushort)),
+        3
+    });
+
+
     // glDrawElementsInstanced(
     //     GL_LINES, 
     //     arrowNormalLineIndexCount_, 
@@ -594,9 +622,14 @@ void GLWindow::paintGL()
     //     reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_) * sizeof(GLushort)), 
     //     1);
 
-    glBindVertexArray(planeVaoId_);
-    bindModelMatrixToVao(planeVaoId_, planeModelMatrixBufferId_);
-    glDrawElementsInstanced(GL_TRIANGLES, planeIndexCount_, GL_UNSIGNED_SHORT, (void*)(cubeIndexCount_*sizeof(GLushort)+arrowIndexCount_*sizeof(GLushort)), 1);
+    renderer_.drawInstanced(*this, DrawCommand{
+        planeVaoId_,
+        planeModelMatrixBufferId_,
+        static_cast<GLsizei>(planeIndexCount_),
+        GL_UNSIGNED_SHORT,
+        reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_) * sizeof(GLushort)),
+        3
+    });
     // glDrawElementsInstanced(
     //     GL_LINES,
     //     planeNormalLineIndexCount_,
