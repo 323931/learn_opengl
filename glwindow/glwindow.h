@@ -100,6 +100,17 @@ private:
 
 private:
     Renderer renderer_;
+    GpuMesh cubeMesh_;
+    GpuMesh arrowMesh_;
+    GpuMesh planeMesh_;
+    GpuMesh arrowNormalLineMesh_;
+    GpuMesh planeNormalLineMesh_;
+    Renderable lightRenderable_;
+    Renderable cubeRenderable_;
+    Renderable arrowRenderable_;
+    Renderable planeRenderable_;
+    Renderable arrowNormalLineRenderable_;
+    Renderable planeNormalLineRenderable_;
     Camera camera_;
     glm::vec3 lightPosition_ = glm::vec3(0.0f, 4.5f, -3.5f);
 };

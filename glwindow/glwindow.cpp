@@ -199,6 +199,51 @@ void GLWindow::sendDataToOpengl(){
     glBindBuffer(GL_ARRAY_BUFFER, planeModelMatrixBufferId_);
     glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
 
+    cubeMesh_ = GpuMesh{
+        cubeVaoId_,
+        GL_TRIANGLES,
+        static_cast<GLsizei>(cubeIndexCount_),
+        GL_UNSIGNED_SHORT,
+        nullptr
+    };
+    arrowMesh_ = GpuMesh{
+        arrowVaoId_,
+        GL_TRIANGLES,
+        arrowIndexCount_,
+        GL_UNSIGNED_SHORT,
+        reinterpret_cast<void*>(cubeIndexCount_ * sizeof(GLushort))
+    };
+    planeMesh_ = GpuMesh{
+        planeVaoId_,
+        GL_TRIANGLES,
+        static_cast<GLsizei>(planeIndexCount_),
+        GL_UNSIGNED_SHORT,
+        reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_) * sizeof(GLushort))
+    };
+    arrowNormalLineMesh_ = GpuMesh{
+        arrowVaoId_,
+        GL_LINES,
+        static_cast<GLsizei>(arrowNormalLineIndexCount_),
+        GL_UNSIGNED_SHORT,
+        reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_) * sizeof(GLushort))
+    };
+    planeNormalLineMesh_ = GpuMesh{
+        planeVaoId_,
+        GL_LINES,
+        static_cast<GLsizei>(planeNormalLineIndexCount_),
+        GL_UNSIGNED_SHORT,
+        reinterpret_cast<void*>(
+            (cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_ + arrowNormalLineIndexCount_) * sizeof(GLushort)
+        )
+    };
+
+    lightRenderable_ = Renderable{&cubeMesh_, lightModelMatrixBufferId_, 1};
+    cubeRenderable_ = Renderable{&cubeMesh_, cubeModelMatrixBufferId_, kSceneCubeCount};
+    arrowRenderable_ = Renderable{&arrowMesh_, arrowModelMatrixBufferId_, kSceneArrowCount};
+    planeRenderable_ = Renderable{&planeMesh_, planeModelMatrixBufferId_, 1};
+    arrowNormalLineRenderable_ = Renderable{&arrowNormalLineMesh_, arrowModelMatrixBufferId_, kSceneArrowCount};
+    planeNormalLineRenderable_ = Renderable{&planeNormalLineMesh_, planeModelMatrixBufferId_, 1};
+
     cube.release();
     arrow.release();
     plane.release();
@@ -557,14 +602,7 @@ void GLWindow::paintGL()
     glUniformMatrix4fv(colorViewMatrixLocation_, 1, GL_FALSE, &worldToViewMartix[0][0]);
     glUniformMatrix4fv(colorProjectionMatrixLocation_, 1, GL_FALSE, &projectMartix[0][0]);
 
-    renderer_.drawInstanced(*this, DrawCommand{
-        cubeVaoId_,
-        lightModelMatrixBufferId_,
-        static_cast<GLsizei>(cubeIndexCount_),
-        GL_UNSIGNED_SHORT,
-        nullptr,
-        1
-    });
+    renderer_.drawInstanced(*this, lightRenderable_);
 
     glUseProgram(programId_);
 
@@ -586,33 +624,11 @@ void GLWindow::paintGL()
 
     glUniformMatrix4fv(uniformProjectionMatrixLocation_, 1, GL_FALSE, &projectMartix[0][0]);
 
-    renderer_.drawInstanced(*this, DrawCommand{
-        cubeVaoId_,
-        cubeModelMatrixBufferId_,
-        static_cast<GLsizei>(cubeIndexCount_),
-        GL_UNSIGNED_SHORT,
-        nullptr,
-        kSceneCubeCount
-    });
+    renderer_.drawInstanced(*this, cubeRenderable_);
 
     //draw arrow 
-    renderer_.drawInstanced(*this, DrawCommand{
-        arrowVaoId_,
-        arrowModelMatrixBufferId_,
-        arrowIndexCount_,
-        GL_UNSIGNED_SHORT,
-        reinterpret_cast<void*>(cubeIndexCount_ * sizeof(GLushort)),
-        kSceneArrowCount
-    });
-
-    renderer_.drawNormalLineInstanced(*this, DrawCommand{
-        arrowVaoId_,
-        arrowModelMatrixBufferId_,
-        static_cast<GLsizei>(arrowNormalLineIndexCount_),
-        GL_UNSIGNED_SHORT,
-        reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_) * sizeof(GLushort)),
-        3
-    });
+    renderer_.drawInstanced(*this, arrowRenderable_);
+    renderer_.drawInstanced(*this, arrowNormalLineRenderable_);
 
 
     // glDrawElementsInstanced(
@@ -622,14 +638,7 @@ void GLWindow::paintGL()
     //     reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_) * sizeof(GLushort)), 
     //     1);
 
-    renderer_.drawInstanced(*this, DrawCommand{
-        planeVaoId_,
-        planeModelMatrixBufferId_,
-        static_cast<GLsizei>(planeIndexCount_),
-        GL_UNSIGNED_SHORT,
-        reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_) * sizeof(GLushort)),
-        3
-    });
+    renderer_.drawInstanced(*this, planeRenderable_);
     // glDrawElementsInstanced(
     //     GL_LINES,
     //     planeNormalLineIndexCount_,
