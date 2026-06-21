@@ -37,6 +37,14 @@ void ShaderProgram::setFloat(QOpenGLFunctions_3_3_Core& gl, const char* name, fl
     }
 }
 
+void ShaderProgram::setInt(QOpenGLFunctions_3_3_Core& gl, const char* name, int value)
+{
+    const GLint location = uniformLocation(gl, name);
+    if (location >= 0) {
+        gl.glUniform1i(location, value);
+    }
+}
+
 bool ShaderProgram::load(QOpenGLFunctions_3_3_Core& gl,
                          const QByteArray& vertexShaderSource,
                          const QByteArray& fragmentShaderSource)

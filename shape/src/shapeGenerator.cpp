@@ -292,6 +292,10 @@ void ShapeGenerator::makePlaneVertex(ShapeData& data,int dimension){
             const bool alternateTile = ((i + j) % 2) == 0;
             v.color = alternateTile ? vec3(0.34f, 0.36f, 0.34f) : vec3(0.42f, 0.43f, 0.40f);
             v.normal = vec3(0.0f, 1.0f, 0.0f);
+            v.texCoord = glm::vec2(
+                static_cast<float>(j) / static_cast<float>(dimension - 1) * 8.0f,
+                static_cast<float>(i) / static_cast<float>(dimension - 1) * 8.0f
+            );
         }
     }
 }

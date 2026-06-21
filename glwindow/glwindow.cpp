@@ -256,6 +256,9 @@ void GLWindow::configVao(GLuint vaoId, GLuint vboId, GLuint indexBufferId){
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                             reinterpret_cast<void*>(offsetof(Vertex, normal)));
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                            reinterpret_cast<void*>(offsetof(Vertex, texCoord)));
 
 }
 
@@ -264,9 +267,9 @@ void GLWindow::bindModelMatrixToVao(GLuint vaoId, GLuint bufferId){
 
     glBindBuffer(GL_ARRAY_BUFFER, bufferId);
     for(size_t i = 0; i<4;++i){
-        glVertexAttribPointer(i+3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*i*4));
-        glEnableVertexAttribArray(i+3);
-        glVertexAttribDivisor(i+3, 1);
+        glVertexAttribPointer(i+4, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*i*4));
+        glEnableVertexAttribArray(i+4);
+        glVertexAttribDivisor(i+4, 1);
     }
 }
 
@@ -370,6 +373,7 @@ void GLWindow::initializeGL(){
     glEnable(GL_CULL_FACE);
 
     installShaders();
+    loadTextures();
     initializeMaterials();
     sendDataToOpengl();
 
@@ -416,6 +420,11 @@ void GLWindow::initializeMaterials()
     solidColorMaterial_.shader = &solidColorShader_;
     lightingMaterial_.shader = &lightingShader_;
     lightingMaterial_.lighting = &lighting_;
+
+    texturedLightingMaterial_.shader = &lightingShader_;
+    texturedLightingMaterial_.lighting = &lighting_;
+    texturedLightingMaterial_.diffuseTexture = &groundTexture_;
+    texturedLightingMaterial_.useDiffuseTexture = true;
 }
 
 void GLWindow::initializeRenderItems()
@@ -425,9 +434,14 @@ void GLWindow::initializeRenderItems()
         RenderItem{MaterialType::Lighting, &cubeRenderable_},
         RenderItem{MaterialType::Lighting, &arrowRenderable_},
         RenderItem{MaterialType::Lighting, &arrowNormalLineRenderable_},
-        RenderItem{MaterialType::Lighting, &planeRenderable_},
+        RenderItem{MaterialType::TexturedLighting, &planeRenderable_},
         RenderItem{MaterialType::Lighting, &planeNormalLineRenderable_},
     };
+}
+
+void GLWindow::loadTextures()
+{
+    groundTexture_.load(*this, ":/assets/textures/Ground037_1K-JPG_Color.jpg");
 }
 
 void GLWindow::drawRenderItem(const RenderItem& item, const FrameUniforms& frame)
@@ -442,6 +456,9 @@ void GLWindow::drawRenderItem(const RenderItem& item, const FrameUniforms& frame
             break;
         case MaterialType::Lighting:
             lightingMaterial_.use(*this, frame);
+            break;
+        case MaterialType::TexturedLighting:
+            texturedLightingMaterial_.use(*this, frame);
             break;
     }
 
@@ -479,6 +496,7 @@ GLWindow::~GLWindow(){
 
     lightingShader_.destroy(*this);
     solidColorShader_.destroy(*this);
+    groundTexture_.destroy(*this);
 
     GLuint vaos[] = { cubeVaoId_, arrowVaoId_, planeVaoId_ };
     glDeleteVertexArrays(3, vaos);

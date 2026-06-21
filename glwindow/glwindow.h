@@ -18,7 +18,8 @@ class QMouseEvent;
 
 enum class MaterialType {
     SolidColor,
-    Lighting
+    Lighting,
+    TexturedLighting
 };
 
 struct RenderItem {
@@ -54,6 +55,7 @@ private:
     QString readShaderCode(const QString& path);
     void initializeMaterials();
     void initializeRenderItems();
+    void loadTextures();
     void drawRenderItem(const RenderItem& item, const FrameUniforms& frame);
 
     //cube 
@@ -97,6 +99,8 @@ private:
     ShaderProgram solidColorShader_;
     SolidColorMaterial solidColorMaterial_;
     LightingMaterial lightingMaterial_;
+    LightingMaterial texturedLightingMaterial_;
+    Texture2D groundTexture_;
     Renderer renderer_;
     GpuMesh cubeMesh_;
     GpuMesh arrowMesh_;

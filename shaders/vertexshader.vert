@@ -3,7 +3,8 @@
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 vertexColor;
 layout(location = 2) in vec3 vertexNormal;
-layout(location = 3) in mat4 modelMatrix;
+layout(location = 3) in vec2 texCoord;
+layout(location = 4) in mat4 modelMatrix;
 
 uniform vec3 uni_color;
 uniform mat4 viewMatrix;
@@ -12,6 +13,7 @@ uniform mat4 projectionMatrix;
 out vec3 theWorldNormal;
 out vec3 theWorldPosition;
 out vec3 theVertexColor;
+out vec2 theTexCoord;
 
 void main()
 {
@@ -21,4 +23,5 @@ void main()
     theWorldNormal = normalize(mat3(transpose(inverse(modelMatrix))) * vertexNormal);
     theWorldPosition = vec3(modelMatrix * v);
     theVertexColor = vertexColor;
+    theTexCoord = texCoord;
 }

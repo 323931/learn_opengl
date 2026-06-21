@@ -3,5 +3,6 @@
         <file>shaders/vertexshader.vert</file>
         <file>shaders/fragmentshader.frag</file>
         <file>shaders/throughColorFragmentshader.frag</file>
+        <file>assets/textures/Ground037_1K-JPG_Color.jpg</file>
     </qresource>
 </RCC>

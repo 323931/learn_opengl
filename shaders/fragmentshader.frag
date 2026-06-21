@@ -3,6 +3,7 @@
 in vec3 theWorldNormal;
 in vec3 theWorldPosition;
 in vec3 theVertexColor;
+in vec2 theTexCoord;
 out vec4 fragColor;
 
 uniform vec3 lightPosition;
@@ -12,6 +13,8 @@ uniform float lightLinear;
 uniform float lightQuadratic;
 uniform vec3 ambientLight;
 uniform vec3 viewPositionWorld;
+uniform sampler2D diffuseTexture;
+uniform bool useDiffuseTexture;
 
 void main()
 {
@@ -29,7 +32,8 @@ void main()
     //这里pow函数如果是奇数次幂指数会导致结果为负数，出现的结果就是减去某些颜色，所以要用clamp/max做限制
     float specular = pow(max(dot(reflectLight,viewVertex),0.0), 32.0);
 
-    vec3 color = theVertexColor * ambientLight
-        + attenuation * lightColor * (theVertexColor * diffuse + vec3(specular));
+    vec3 surfaceColor = useDiffuseTexture ? texture(diffuseTexture, theTexCoord).rgb : theVertexColor;
+    vec3 color = surfaceColor * ambientLight
+        + attenuation * lightColor * (surfaceColor * diffuse + vec3(specular));
     fragColor = vec4(color, 1.0);
 }

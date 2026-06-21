@@ -3,6 +3,7 @@
 #include <QOpenGLFunctions_3_3_Core>
 #include <glm/glm.hpp>
 #include <shaderprogram.h>
+#include <texture2d.h>
 
 struct PointLight {
     glm::vec3 position = glm::vec3(0.0f, 4.5f, -3.5f);
@@ -32,6 +33,8 @@ struct SolidColorMaterial {
 struct LightingMaterial {
     ShaderProgram* shader = nullptr;
     const SceneLighting* lighting = nullptr;
+    const Texture2D* diffuseTexture = nullptr;
+    bool useDiffuseTexture = false;
 
     void use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& frame) const;
 };

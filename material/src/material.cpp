@@ -27,4 +27,11 @@ void LightingMaterial::use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& f
     shader->setVec3(gl, "viewPositionWorld", frame.viewPositionWorld);
     shader->setMat4(gl, "viewMatrix", frame.viewMatrix);
     shader->setMat4(gl, "projectionMatrix", frame.projectionMatrix);
+
+    const bool hasDiffuseTexture = useDiffuseTexture && diffuseTexture != nullptr && diffuseTexture->id() != 0;
+    shader->setInt(gl, "useDiffuseTexture", hasDiffuseTexture ? 1 : 0);
+    if (hasDiffuseTexture) {
+        diffuseTexture->bind(gl, 0);
+        shader->setInt(gl, "diffuseTexture", 0);
+    }
 }

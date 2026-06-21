@@ -16,6 +16,7 @@ public:
     void setMat4(QOpenGLFunctions_3_3_Core& gl, const char* name, const glm::mat4& value);
     void setVec3(QOpenGLFunctions_3_3_Core& gl, const char* name, const glm::vec3& value);
     void setFloat(QOpenGLFunctions_3_3_Core& gl, const char* name, float value);
+    void setInt(QOpenGLFunctions_3_3_Core& gl, const char* name, int value);
 
     bool load(QOpenGLFunctions_3_3_Core& gl,
               const QByteArray& vertexShaderSource,
