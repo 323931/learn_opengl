@@ -8,6 +8,7 @@
 #include <camera.h>
 #include <glm/glm.hpp>
 #include <renderer.h>
+#include <shaderprogram.h>
 
 class QKeyEvent;
 class QMouseEvent;
@@ -50,14 +51,10 @@ protected:
     void resizeGL(int w, int h) override;
     void paintGL() override;
 
-    void getUniformLocationInShaderForProgram(GLuint programId);
-
     void mouseMoveEvent(QMouseEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void sendDataToOpengl();
     void sendAnotherTriangle();
-    void sendCubeToOpengl();
-    void sendArrowToOpengl();
 
     ~GLWindow();
 
@@ -103,19 +100,6 @@ private:
     GLuint totalVboId_ = 0;
     GLuint totalIndexBufferId_ = 0;
 
-    //uniform location
-    GLint uniformAmbientLightLocation_ = -1;
-    GLint uniformLightPositionLocation_ = -1;
-    GLint uniformLightColorLocation_ = -1;
-    GLint uniformLightConstantLocation_ = -1;
-    GLint uniformLightLinearLocation_ = -1;
-    GLint uniformLightQuadraticLocation_ = -1;
-    GLint uniformViewMatrixLocation_ = -1;
-    GLint uniformProjectionMatrixLocation_ = -1;
-    GLint uniformViewPositionWorldLocation_ = -1;
-
-    GLint colorViewMatrixLocation_ = -1;
-    GLint colorProjectionMatrixLocation_ = -1;
 private:
     const float per_step = 0.1f;
     int triangle_num = 0;
@@ -124,6 +108,8 @@ private:
     int byte_size_per_triangle = vertex_num_per_triangle*float_num_per_vertex*sizeof(float);
 
 private:
+    ShaderProgram lightingShader_;
+    ShaderProgram solidColorShader_;
     Renderer renderer_;
     GpuMesh cubeMesh_;
     GpuMesh arrowMesh_;

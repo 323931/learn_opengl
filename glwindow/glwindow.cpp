@@ -250,133 +250,6 @@ void GLWindow::sendDataToOpengl(){
     planeNormalLine.release();
 }
 
-void GLWindow::sendCubeToOpengl(){
-    //send cube to opengl
-    ShapeData shape =  ShapeGenerator::createCube();
-    cubeIndexCount_ = shape.index_num;
-    //在gpu上申请一个 vao，vertex array object ，句柄放到vaoid。
-    glGenVertexArrays(1, &cubeVaoId_);
-    //激活这个vao，之后对vbo，顶点属性的操作都会写进这个vao
-    glBindVertexArray(cubeVaoId_);
-
-    //在gpu申请一个vbo，vertex buffer object，句柄在vboid
-    glGenBuffers(1, &cubeVboId_);
-    //把刚创建的vbo 绑定要 GL_ARRAY_BUFFER这个绑定点，OpenGL 很多操作都针对「当前绑定的 buffer」，所以先 bind 再 glBufferData。
-    glBindBuffer(GL_ARRAY_BUFFER, cubeVboId_);
-    //分配空间
-    glBufferData(GL_ARRAY_BUFFER, shape.vertices_size(), shape.vertices, GL_STATIC_DRAW);
-
-    //打开顶点属性 0（我们 shader 里的 position）。
-    //关掉的话，即使 VBO 有数据，管线也不会读这个属性。
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                          reinterpret_cast<void*>(offsetof(Vertex, position)));
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                          reinterpret_cast<void*>(offsetof(Vertex, color)));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                          reinterpret_cast<void*>(offsetof(Vertex, normal)));
-
-    glGenBuffers(1, &cubeIndexBufferId_);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIndexBufferId_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, shape.indices_size(), shape.indices, GL_STATIC_DRAW);
-
-    glGenBuffers(1, &cubeFullTransformMartixBufferId_);
-    glBindBuffer(GL_ARRAY_BUFFER, cubeFullTransformMartixBufferId_);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4)*2, nullptr, GL_DYNAMIC_DRAW);
-
-    // glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*0));
-    // glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*4));
-    // glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*8));
-    // glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*12));
-
-    // glEnableVertexAttribArray(2);
-    // glEnableVertexAttribArray(3);
-    // glEnableVertexAttribArray(4);
-    // glEnableVertexAttribArray(5);
-    // glVertexAttribDivisor(2, 1);
-    // glVertexAttribDivisor(3, 1);
-    // glVertexAttribDivisor(4, 1);
-    // glVertexAttribDivisor(5, 1);
-
-    for(size_t i = 0; i<4;++i){
-        glVertexAttribPointer(i+3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*i*4));
-        glEnableVertexAttribArray(i+3);
-        glVertexAttribDivisor(i+3, 1);
-    }
-
-    glBindVertexArray(0);
-
-    std::cerr << "Cube uploaded: " << shape.vertex_num << " vertices, "
-              << shape.index_num << " indices"
-              << " v2=(" << shape.vertices[2].position.x << ","
-              << shape.vertices[2].position.y << ","
-              << shape.vertices[2].position.z << ")"
-              << " v21=(" << shape.vertices[21].position.x << ","
-              << shape.vertices[21].position.y << ","
-              << shape.vertices[21].position.z << ")\n";
-
-    shape.release();
-}
-
-void GLWindow::sendArrowToOpengl(){
-    //send arrow to opengl
-    ShapeData shape = ShapeGenerator::createArrow();
-    arrowIndexCount_ = shape.index_num;
-
-    glGenVertexArrays(1, &arrowVaoId_);
-    glBindVertexArray(arrowVaoId_);
-
-    glGenBuffers(1, &arrowVboId_);
-    glBindBuffer(GL_ARRAY_BUFFER, arrowVboId_);
-    glBufferData(GL_ARRAY_BUFFER, shape.vertices_size(), shape.vertices, GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-    reinterpret_cast<void*>(offsetof(Vertex, position)));
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
-    reinterpret_cast<void*>(offsetof(Vertex,color)));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-    reinterpret_cast<void*>(offsetof(Vertex, normal)));
-
-
-    glGenBuffers(1, &arrowIndexBufferId_);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, arrowIndexBufferId_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, shape.indices_size(), shape.indices, GL_STATIC_DRAW);
-
-    glGenBuffers(1, &arrowFullTransformMartixBufferId_);
-    glBindBuffer(GL_ARRAY_BUFFER, arrowFullTransformMartixBufferId_);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
-    
-    
-    for(size_t i = 0; i<4;++i){
-        glVertexAttribPointer(i+3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*i*4));
-        glEnableVertexAttribArray(i+3);
-        glVertexAttribDivisor(i+3, 1);
-    }
-
-    glBindVertexArray(0);
-
-
-    std::cerr << "Arrow uploaded: " << shape.vertex_num << " vertices, "
-            << shape.index_num << " indices"
-            << " v2=(" << shape.vertices[2].position.x << ","
-            << shape.vertices[2].position.y << ","
-            << shape.vertices[2].position.z << ")"
-            << " v21=(" << shape.vertices[21].position.x << ","
-            << shape.vertices[21].position.y << ","
-            << shape.vertices[21].position.z << ")\n";
-
-    shape.release();
-    
-}
-
-
 void GLWindow::sendAnotherTriangle(){
     //制作一个三角形动态移动的效果，所以一次需要传递三个顶点，第一次定位在左上角
     //一直向右边移动，所以传递的顶点分别是 -1.0，+1.0f，-1.0f，0.0f, -0.9f,1.0f;
@@ -569,8 +442,6 @@ void GLWindow::initializeGL(){
 
     installShaders();
     sendDataToOpengl();
-    getUniformLocationInShaderForProgram(programId_);
-    getUniformLocationInShaderForProgram(throughColorProgramId_);
 
     if (programId_ == 0) {
         std::cerr << "Shader program not ready — check compile/link messages above\n";
@@ -600,9 +471,11 @@ void GLWindow::paintGL()
     };
     updateModelMatrix();
 
+    //draw light
     useSolidColorMaterial(frame);
     renderer_.drawInstanced(*this, lightRenderable_);
 
+    //draw cube
     useLightingMaterial(frame);
     renderer_.drawInstanced(*this, cubeRenderable_);
 
@@ -610,24 +483,10 @@ void GLWindow::paintGL()
     renderer_.drawInstanced(*this, arrowRenderable_);
     renderer_.drawInstanced(*this, arrowNormalLineRenderable_);
 
-
-    // glDrawElementsInstanced(
-    //     GL_LINES,
-    //     arrowNormalLineIndexCount_,
-    //     GL_UNSIGNED_SHORT,
-    //     reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_) * sizeof(GLushort)),
-    //     1);
-
+    //draw plane
     renderer_.drawInstanced(*this, planeRenderable_);
-    // glDrawElementsInstanced(
-    //     GL_LINES,
-    //     planeNormalLineIndexCount_,
-    //     GL_UNSIGNED_SHORT,
-    //     reinterpret_cast<void*>(
-    //         (cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_ + arrowNormalLineIndexCount_) * sizeof(GLushort)
-    //     ),
-    //     1
-    // );
+    renderer_.drawInstanced(*this, planeNormalLineRenderable_);
+
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
         std::cerr << "OpenGL error after draw: 0x" << std::hex << err << std::dec << "\n";
@@ -636,81 +495,23 @@ void GLWindow::paintGL()
 
 void GLWindow::useSolidColorMaterial(const FrameUniforms& frame)
 {
-    glUseProgram(throughColorProgramId_);
-    glUniformMatrix4fv(colorViewMatrixLocation_, 1, GL_FALSE, &frame.viewMatrix[0][0]);
-    glUniformMatrix4fv(colorProjectionMatrixLocation_, 1, GL_FALSE, &frame.projectionMatrix[0][0]);
+    solidColorShader_.use(*this);
+    solidColorShader_.setMat4(*this, "viewMatrix", frame.viewMatrix);
+    solidColorShader_.setMat4(*this, "projectionMatrix", frame.projectionMatrix);
 }
 
 void GLWindow::useLightingMaterial(const FrameUniforms& frame)
 {
-    glUseProgram(programId_);
-
-    if(uniformAmbientLightLocation_ >= 0){
-        glUniform3fv(uniformAmbientLightLocation_,1, &lighting_.ambientLight[0]);
-    }
-
-    if(uniformLightPositionLocation_ >= 0){
-        glUniform3fv(uniformLightPositionLocation_, 1, &lighting_.pointLight.position[0]);
-    }
-
-    if(uniformLightColorLocation_ >= 0){
-        glUniform3fv(uniformLightColorLocation_, 1, &lighting_.pointLight.color[0]);
-    }
-
-    if(uniformLightConstantLocation_ >= 0){
-        glUniform1f(uniformLightConstantLocation_, lighting_.pointLight.constant);
-    }
-
-    if(uniformLightLinearLocation_ >= 0){
-        glUniform1f(uniformLightLinearLocation_, lighting_.pointLight.linear);
-    }
-
-    if(uniformLightQuadraticLocation_ >= 0){
-        glUniform1f(uniformLightQuadraticLocation_, lighting_.pointLight.quadratic);
-    }
-
-    if(uniformViewPositionWorldLocation_ >= 0){
-        glUniform3fv(uniformViewPositionWorldLocation_, 1, &frame.viewPositionWorld[0]);
-    }
-
-    glUniformMatrix4fv(uniformViewMatrixLocation_, 1, GL_FALSE, &frame.viewMatrix[0][0]);
-    glUniformMatrix4fv(uniformProjectionMatrixLocation_, 1, GL_FALSE, &frame.projectionMatrix[0][0]);
-}
-
-void GLWindow::getUniformLocationInShaderForProgram(GLuint program){
-   if(program == programId_){
-        uniformAmbientLightLocation_ =  glGetUniformLocation(programId_, "ambientLight");
-        // if(uniformAmbientLightLocation_ < 0){
-        //     std::cerr<<"ambientLight uniform not found"<<std::endl;
-        // }
-
-        uniformLightPositionLocation_ = glGetUniformLocation(programId_, "lightPosition");
-        // if(uniformLightPositionLocation < 0){
-        //     std::cerr<<"lightPosition uniform not found"<<std::endl;
-        // }
-
-        uniformLightColorLocation_ = glGetUniformLocation(programId_, "lightColor");
-        uniformLightConstantLocation_ = glGetUniformLocation(programId_, "lightConstant");
-        uniformLightLinearLocation_ = glGetUniformLocation(programId_, "lightLinear");
-        uniformLightQuadraticLocation_ = glGetUniformLocation(programId_, "lightQuadratic");
-
-        uniformViewMatrixLocation_ = glGetUniformLocation(programId_, "viewMatrix");
-        // if(uniformViewMatrixLocation_ < 0){
-        //     std::cerr<<"viewMatrix uniform not found"<<std::endl;
-        // }
-
-        uniformProjectionMatrixLocation_ = glGetUniformLocation(programId_, "projectionMatrix");
-        // if(uniformProjectionMatrixLocation_ < 0){
-        //     std::cerr<<"projectionMatrix uniform not found"<<std::endl;
-        // }
-
-        uniformViewPositionWorldLocation_ = glGetUniformLocation(programId_, "viewPositionWorld");
-    }
-
-    if(program == throughColorProgramId_){
-        colorViewMatrixLocation_ = glGetUniformLocation(throughColorProgramId_, "viewMatrix");
-        colorProjectionMatrixLocation_ = glGetUniformLocation(throughColorProgramId_, "projectionMatrix");
-    }
+    lightingShader_.use(*this);
+    lightingShader_.setVec3(*this, "ambientLight", lighting_.ambientLight);
+    lightingShader_.setVec3(*this, "lightPosition", lighting_.pointLight.position);
+    lightingShader_.setVec3(*this, "lightColor", lighting_.pointLight.color);
+    lightingShader_.setFloat(*this, "lightConstant", lighting_.pointLight.constant);
+    lightingShader_.setFloat(*this, "lightLinear", lighting_.pointLight.linear);
+    lightingShader_.setFloat(*this, "lightQuadratic", lighting_.pointLight.quadratic);
+    lightingShader_.setVec3(*this, "viewPositionWorld", frame.viewPositionWorld);
+    lightingShader_.setMat4(*this, "viewMatrix", frame.viewMatrix);
+    lightingShader_.setMat4(*this, "projectionMatrix", frame.projectionMatrix);
 }
 
 QString GLWindow::readShaderCode(const QString& path)
@@ -768,7 +569,9 @@ void GLWindow::installShaders()
     }
 
     // glUseProgram(programId_);
-    glUseProgram(throughColorProgramId_);
+    lightingShader_.setProgramId(programId_);
+    solidColorShader_.setProgramId(throughColorProgramId_);
+    solidColorShader_.use(*this);
     glDeleteShader(vertexShaderId);
     glDeleteShader(fragmentShaderId);
     glDeleteShader(throughColorFragmentShaderId);

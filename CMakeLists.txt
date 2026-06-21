@@ -19,6 +19,8 @@ add_executable(opengl_triangle
     scenewindow/scenewindow.cpp
     renderer/include/renderer.h
     renderer/src/renderer.cpp
+    shaderprogram/include/shaderprogram.h
+    shaderprogram/src/shaderprogram.cpp
     shape/src/shapeGenerator.cpp
     shaders.qrc
     camera/src/camera.cpp
@@ -30,6 +32,7 @@ target_include_directories(opengl_triangle PRIVATE
     shape/include
     camera/include
     renderer/include
+    shaderprogram/include
     tools/
 )
 
