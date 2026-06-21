@@ -11,7 +11,6 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <iostream>
 #include <qopenglext.h>
-#include <vector>
 #include <shapeGenerator.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -46,39 +45,6 @@ void GLWindow::setLightPosition(float x, float y, float z)
 glm::vec3 GLWindow::lightPosition() const
 {
     return lighting_.pointLight.position;
-}
-
-bool GLWindow::checkStatus(GLuint objectId,
-    void (QOpenGLFunctions_3_3_Core::*getStatusFunc)(GLuint, GLenum, GLint*),
-    void (QOpenGLFunctions_3_3_Core::*getInfoLogFunc)(GLuint, GLsizei, GLsizei*, GLchar*),
-    GLenum statusType){
-        GLint status;
-        (this->*getStatusFunc)(objectId, statusType, &status);
-        if(status != GL_TRUE){
-            GLint logLength;
-            (this->*getStatusFunc)(objectId, GL_INFO_LOG_LENGTH, &logLength);
-            if(logLength > 0){
-                std::vector<char> log(logLength);
-                (this->*getInfoLogFunc)(objectId, logLength, nullptr, log.data());
-                std::cerr << "Status check failed: " << log.data() << std::endl;
-                return false;
-            }
-        }
-        return true;
-}
-
-bool GLWindow::checkShaderCompile(GLuint shaderId){
-    return checkStatus(shaderId,
-                       &QOpenGLFunctions_3_3_Core::glGetShaderiv,
-                       &QOpenGLFunctions_3_3_Core::glGetShaderInfoLog,
-                       GL_COMPILE_STATUS);
-}
-
-bool GLWindow::checkShaderLink(GLuint programId){
-    return checkStatus(programId,
-                       &QOpenGLFunctions_3_3_Core::glGetProgramiv,
-                       &QOpenGLFunctions_3_3_Core::glGetProgramInfoLog,
-                       GL_LINK_STATUS);
 }
 
 void GLWindow::sendDataToOpengl(){
@@ -443,10 +409,10 @@ void GLWindow::initializeGL(){
     installShaders();
     sendDataToOpengl();
 
-    if (programId_ == 0) {
+    if (lightingShader_.id() == 0 || solidColorShader_.id() == 0) {
         std::cerr << "Shader program not ready — check compile/link messages above\n";
     } else {
-        std::cerr << "Shader program OK, id=" << programId_ << "\n";
+        std::cerr << "Shader program OK, id=" << lightingShader_.id() << "\n";
     }
     
     updateModelMatrix();
@@ -525,63 +491,26 @@ QString GLWindow::readShaderCode(const QString& path)
 
 void GLWindow::installShaders()
 {
-    const GLuint vertexShaderId = glCreateShader(GL_VERTEX_SHADER);
-    const GLuint fragmentShaderId = glCreateShader(GL_FRAGMENT_SHADER);
-    const GLuint throughColorFragmentShaderId = glCreateShader(GL_FRAGMENT_SHADER);
-
     const QByteArray vertexSource = readShaderCode(":/shaders/vertexshader.vert").toUtf8();
     const QByteArray fragmentSource = readShaderCode(":/shaders/fragmentshader.frag").toUtf8();
     const QByteArray throughColorFragmentSource = readShaderCode(":/shaders/throughColorFragmentshader.frag").toUtf8();
 
-    if (vertexSource.isEmpty() || fragmentSource.isEmpty() || throughColorFragmentSource.isEmpty()) {
-        std::cerr << "Failed to load shader files from Qt resources\n";
-        return;
+    if (!lightingShader_.load(*this, vertexSource, fragmentSource)) {
+        std::cerr << "Failed to load lighting shader program\n";
     }
 
-    const char* vertexPtr = vertexSource.constData();
-    const char* fragmentPtr = fragmentSource.constData();
-    const char* throughColorFragmentPtr = throughColorFragmentSource.constData();
-    glShaderSource(vertexShaderId, 1, &vertexPtr, nullptr);
-    glShaderSource(fragmentShaderId, 1, &fragmentPtr, nullptr);
-    glShaderSource(throughColorFragmentShaderId, 1, &throughColorFragmentPtr, nullptr);
-    glCompileShader(vertexShaderId);
-    glCompileShader(fragmentShaderId);
-    glCompileShader(throughColorFragmentShaderId);
-
-    if(!checkShaderCompile(vertexShaderId) || !checkShaderCompile(fragmentShaderId) || !checkShaderCompile(throughColorFragmentShaderId)){
-        std::cerr << "Failed to compile shader\n";
-        return;
+    if (!solidColorShader_.load(*this, vertexSource, throughColorFragmentSource)) {
+        std::cerr << "Failed to load solid color shader program\n";
     }
 
-    programId_ = glCreateProgram();
-    glAttachShader(programId_, vertexShaderId);
-    glAttachShader(programId_, fragmentShaderId);
-    glLinkProgram(programId_);
-
-    throughColorProgramId_ = glCreateProgram();
-    glAttachShader(throughColorProgramId_, vertexShaderId);
-    glAttachShader(throughColorProgramId_, throughColorFragmentShaderId);
-    glLinkProgram(throughColorProgramId_);
-
-    if(!checkShaderLink(programId_) || !checkShaderLink(throughColorProgramId_)){
-        std::cerr << "Failed to link shader\n";
-        exit(EXIT_FAILURE);
-    }
-
-    // glUseProgram(programId_);
-    lightingShader_.setProgramId(programId_);
-    solidColorShader_.setProgramId(throughColorProgramId_);
     solidColorShader_.use(*this);
-    glDeleteShader(vertexShaderId);
-    glDeleteShader(fragmentShaderId);
-    glDeleteShader(throughColorFragmentShaderId);
 }
 
 GLWindow::~GLWindow(){
     makeCurrent();
 
-    glDeleteProgram(programId_);
-    glDeleteProgram(throughColorProgramId_);
+    lightingShader_.destroy(*this);
+    solidColorShader_.destroy(*this);
 
     GLuint vaos[] = { cubeVaoId_, arrowVaoId_, planeVaoId_ };
     glDeleteVertexArrays(3, vaos);

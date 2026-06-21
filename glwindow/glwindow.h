@@ -40,12 +40,6 @@ public:
     explicit GLWindow(QWidget* parent = nullptr);
     void setLightPosition(float x, float y, float z);
     glm::vec3 lightPosition() const;
-    bool checkStatus(GLuint objectId,
-                     void (QOpenGLFunctions_3_3_Core::*getStatusFunc)(GLuint, GLenum, GLint*),
-                     void (QOpenGLFunctions_3_3_Core::*getInfoLogFunc)(GLuint, GLsizei, GLsizei*, GLchar*),
-                     GLenum statusType);
-    bool checkShaderCompile(GLuint shaderId);
-    bool checkShaderLink(GLuint programId);
 protected:
     void initializeGL() override;
     void resizeGL(int w, int h) override;
@@ -69,8 +63,6 @@ private:
     void useSolidColorMaterial(const FrameUniforms& frame);
     void useLightingMaterial(const FrameUniforms& frame);
 
-    GLuint programId_ = 0;
-    GLuint throughColorProgramId_ = 0;
     //cube 
     GLuint cubeVaoId_ = 0;
     GLuint cubeVboId_ = 0;
