@@ -12,6 +12,19 @@
 class QKeyEvent;
 class QMouseEvent;
 
+struct PointLight {
+    glm::vec3 position = glm::vec3(0.0f, 4.5f, -3.5f);
+    glm::vec3 color = glm::vec3(1.0f, 0.92f, 0.78f);
+    float constant = 1.0f;
+    float linear = 0.09f;
+    float quadratic = 0.032f;
+};
+
+struct SceneLighting {
+    glm::vec3 ambientLight = glm::vec3(0.08f, 0.07f, 0.06f);
+    PointLight pointLight;
+};
+
 class GLWindow : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
 {
     Q_OBJECT
@@ -85,6 +98,10 @@ private:
     //uniform location
     GLint uniformAmbientLightLocation_ = -1;
     GLint uniformLightPositionLocation_ = -1;
+    GLint uniformLightColorLocation_ = -1;
+    GLint uniformLightConstantLocation_ = -1;
+    GLint uniformLightLinearLocation_ = -1;
+    GLint uniformLightQuadraticLocation_ = -1;
     GLint uniformViewMatrixLocation_ = -1;
     GLint uniformProjectionMatrixLocation_ = -1;
     GLint uniformViewPositionWorldLocation_ = -1;
@@ -112,5 +129,5 @@ private:
     Renderable arrowNormalLineRenderable_;
     Renderable planeNormalLineRenderable_;
     Camera camera_;
-    glm::vec3 lightPosition_ = glm::vec3(0.0f, 4.5f, -3.5f);
+    SceneLighting lighting_;
 };

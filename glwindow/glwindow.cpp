@@ -39,13 +39,13 @@ GLWindow::GLWindow(QWidget* parent)
 
 void GLWindow::setLightPosition(float x, float y, float z)
 {
-    lightPosition_ = glm::vec3(x, y, z);
+    lighting_.pointLight.position = glm::vec3(x, y, z);
     update();
 }
 
 glm::vec3 GLWindow::lightPosition() const
 {
-    return lightPosition_;
+    return lighting_.pointLight.position;
 }
 
 bool GLWindow::checkStatus(GLuint objectId,
@@ -82,7 +82,6 @@ bool GLWindow::checkShaderLink(GLuint programId){
 }
 
 void GLWindow::sendDataToOpengl(){
-    //第二个cube我们作为灯
     ShapeData cube = ShapeGenerator::createCube();
     ShapeData arrow =  ShapeGenerator::createArrow();
     ShapeData plane = ShapeGenerator::createPlane(32);
@@ -499,7 +498,7 @@ void GLWindow::updateModelMatrix(){
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(cubeModelMatrices), cubeModelMatrices);
 
     mat4 lightModelMatrix =
-        glm::translate(mat4(1.0f), lightPosition_)
+        glm::translate(mat4(1.0f), lighting_.pointLight.position)
         * glm::scale(mat4(1.0f), glm::vec3(0.1f,0.1f,0.1f));
     glBindBuffer(GL_ARRAY_BUFFER, lightModelMatrixBufferId_);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), &lightModelMatrix);
@@ -606,13 +605,28 @@ void GLWindow::paintGL()
 
     glUseProgram(programId_);
 
-    glm::vec3 ambientLight = glm::vec3(0.08f, 0.07f, 0.06f);
     if(uniformAmbientLightLocation_ >= 0){
-        glUniform3fv(uniformAmbientLightLocation_,1, &ambientLight[0]);
+        glUniform3fv(uniformAmbientLightLocation_,1, &lighting_.ambientLight[0]);
     }
 
     if(uniformLightPositionLocation_ >= 0){
-        glUniform3fv(uniformLightPositionLocation_, 1, &lightPosition_[0]);
+        glUniform3fv(uniformLightPositionLocation_, 1, &lighting_.pointLight.position[0]);
+    }
+
+    if(uniformLightColorLocation_ >= 0){
+        glUniform3fv(uniformLightColorLocation_, 1, &lighting_.pointLight.color[0]);
+    }
+
+    if(uniformLightConstantLocation_ >= 0){
+        glUniform1f(uniformLightConstantLocation_, lighting_.pointLight.constant);
+    }
+
+    if(uniformLightLinearLocation_ >= 0){
+        glUniform1f(uniformLightLinearLocation_, lighting_.pointLight.linear);
+    }
+
+    if(uniformLightQuadraticLocation_ >= 0){
+        glUniform1f(uniformLightQuadraticLocation_, lighting_.pointLight.quadratic);
     }
 
     glm::vec3 viewPositionWorld = camera_.getPosition();
@@ -665,6 +679,11 @@ void GLWindow::getUniformLocationInShaderForProgram(GLuint program){
         // if(uniformLightPositionLocation < 0){
         //     std::cerr<<"lightPosition uniform not found"<<std::endl;
         // }
+
+        uniformLightColorLocation_ = glGetUniformLocation(programId_, "lightColor");
+        uniformLightConstantLocation_ = glGetUniformLocation(programId_, "lightConstant");
+        uniformLightLinearLocation_ = glGetUniformLocation(programId_, "lightLinear");
+        uniformLightQuadraticLocation_ = glGetUniformLocation(programId_, "lightQuadratic");
 
         uniformViewMatrixLocation_ = glGetUniformLocation(programId_, "viewMatrix");
         // if(uniformViewMatrixLocation_ < 0){
