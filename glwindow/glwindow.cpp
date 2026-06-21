@@ -370,6 +370,7 @@ void GLWindow::initializeGL(){
     glEnable(GL_CULL_FACE);
 
     installShaders();
+    initializeMaterials();
     sendDataToOpengl();
 
     if (lightingShader_.id() == 0 || solidColorShader_.id() == 0) {
@@ -410,25 +411,11 @@ void GLWindow::paintGL()
     }
 }
 
-void GLWindow::useSolidColorMaterial(const FrameUniforms& frame)
+void GLWindow::initializeMaterials()
 {
-    solidColorShader_.use(*this);
-    solidColorShader_.setMat4(*this, "viewMatrix", frame.viewMatrix);
-    solidColorShader_.setMat4(*this, "projectionMatrix", frame.projectionMatrix);
-}
-
-void GLWindow::useLightingMaterial(const FrameUniforms& frame)
-{
-    lightingShader_.use(*this);
-    lightingShader_.setVec3(*this, "ambientLight", lighting_.ambientLight);
-    lightingShader_.setVec3(*this, "lightPosition", lighting_.pointLight.position);
-    lightingShader_.setVec3(*this, "lightColor", lighting_.pointLight.color);
-    lightingShader_.setFloat(*this, "lightConstant", lighting_.pointLight.constant);
-    lightingShader_.setFloat(*this, "lightLinear", lighting_.pointLight.linear);
-    lightingShader_.setFloat(*this, "lightQuadratic", lighting_.pointLight.quadratic);
-    lightingShader_.setVec3(*this, "viewPositionWorld", frame.viewPositionWorld);
-    lightingShader_.setMat4(*this, "viewMatrix", frame.viewMatrix);
-    lightingShader_.setMat4(*this, "projectionMatrix", frame.projectionMatrix);
+    solidColorMaterial_.shader = &solidColorShader_;
+    lightingMaterial_.shader = &lightingShader_;
+    lightingMaterial_.lighting = &lighting_;
 }
 
 void GLWindow::initializeRenderItems()
@@ -451,10 +438,10 @@ void GLWindow::drawRenderItem(const RenderItem& item, const FrameUniforms& frame
 
     switch (item.materialType) {
         case MaterialType::SolidColor:
-            useSolidColorMaterial(frame);
+            solidColorMaterial_.use(*this, frame);
             break;
         case MaterialType::Lighting:
-            useLightingMaterial(frame);
+            lightingMaterial_.use(*this, frame);
             break;
     }
 

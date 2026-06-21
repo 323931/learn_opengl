@@ -17,6 +17,8 @@ add_executable(opengl_triangle
     glwindow/glwindow.cpp
     scenewindow/scenewindow.h
     scenewindow/scenewindow.cpp
+    material/include/material.h
+    material/src/material.cpp
     renderer/include/renderer.h
     renderer/src/renderer.cpp
     shaderprogram/include/shaderprogram.h
@@ -29,6 +31,7 @@ add_executable(opengl_triangle
 target_include_directories(opengl_triangle PRIVATE
     glwindow
     scenewindow
+    material/include
     shape/include
     camera/include
     renderer/include
