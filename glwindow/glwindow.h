@@ -25,6 +25,12 @@ struct SceneLighting {
     PointLight pointLight;
 };
 
+struct FrameUniforms {
+    glm::mat4 viewMatrix = glm::mat4(1.0f);
+    glm::mat4 projectionMatrix = glm::mat4(1.0f);
+    glm::vec3 viewPositionWorld = glm::vec3(0.0f);
+};
+
 class GLWindow : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
 {
     Q_OBJECT
@@ -63,6 +69,8 @@ private:
     void updateModelMatrix();
     void installShaders();
     QString readShaderCode(const QString& path);
+    void useSolidColorMaterial(const FrameUniforms& frame);
+    void useLightingMaterial(const FrameUniforms& frame);
 
     GLuint programId_ = 0;
     GLuint throughColorProgramId_ = 0;

@@ -593,16 +593,56 @@ void GLWindow::paintGL()
     glViewport(0, 0, width(), height());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    mat4 worldToViewMartix = camera_.getWorldToViewMartix();
-    mat4 projectMartix = glm::perspective(glm::radians(90.0f),(float)width()/height(),0.1f,20.0f);
+    const FrameUniforms frame{
+        camera_.getWorldToViewMartix(),
+        glm::perspective(glm::radians(90.0f), static_cast<float>(width()) / height(), 0.1f, 20.0f),
+        camera_.getPosition()
+    };
     updateModelMatrix();
 
-    glUseProgram(throughColorProgramId_);
-    glUniformMatrix4fv(colorViewMatrixLocation_, 1, GL_FALSE, &worldToViewMartix[0][0]);
-    glUniformMatrix4fv(colorProjectionMatrixLocation_, 1, GL_FALSE, &projectMartix[0][0]);
-
+    useSolidColorMaterial(frame);
     renderer_.drawInstanced(*this, lightRenderable_);
 
+    useLightingMaterial(frame);
+    renderer_.drawInstanced(*this, cubeRenderable_);
+
+    //draw arrow
+    renderer_.drawInstanced(*this, arrowRenderable_);
+    renderer_.drawInstanced(*this, arrowNormalLineRenderable_);
+
+
+    // glDrawElementsInstanced(
+    //     GL_LINES,
+    //     arrowNormalLineIndexCount_,
+    //     GL_UNSIGNED_SHORT,
+    //     reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_) * sizeof(GLushort)),
+    //     1);
+
+    renderer_.drawInstanced(*this, planeRenderable_);
+    // glDrawElementsInstanced(
+    //     GL_LINES,
+    //     planeNormalLineIndexCount_,
+    //     GL_UNSIGNED_SHORT,
+    //     reinterpret_cast<void*>(
+    //         (cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_ + arrowNormalLineIndexCount_) * sizeof(GLushort)
+    //     ),
+    //     1
+    // );
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        std::cerr << "OpenGL error after draw: 0x" << std::hex << err << std::dec << "\n";
+    }
+}
+
+void GLWindow::useSolidColorMaterial(const FrameUniforms& frame)
+{
+    glUseProgram(throughColorProgramId_);
+    glUniformMatrix4fv(colorViewMatrixLocation_, 1, GL_FALSE, &frame.viewMatrix[0][0]);
+    glUniformMatrix4fv(colorProjectionMatrixLocation_, 1, GL_FALSE, &frame.projectionMatrix[0][0]);
+}
+
+void GLWindow::useLightingMaterial(const FrameUniforms& frame)
+{
     glUseProgram(programId_);
 
     if(uniformAmbientLightLocation_ >= 0){
@@ -629,43 +669,12 @@ void GLWindow::paintGL()
         glUniform1f(uniformLightQuadraticLocation_, lighting_.pointLight.quadratic);
     }
 
-    glm::vec3 viewPositionWorld = camera_.getPosition();
     if(uniformViewPositionWorldLocation_ >= 0){
-        glUniform3fv(uniformViewPositionWorldLocation_, 1, &viewPositionWorld[0]);
+        glUniform3fv(uniformViewPositionWorldLocation_, 1, &frame.viewPositionWorld[0]);
     }
 
-    glUniformMatrix4fv(uniformViewMatrixLocation_, 1, GL_FALSE, &worldToViewMartix[0][0]);
-
-    glUniformMatrix4fv(uniformProjectionMatrixLocation_, 1, GL_FALSE, &projectMartix[0][0]);
-
-    renderer_.drawInstanced(*this, cubeRenderable_);
-
-    //draw arrow 
-    renderer_.drawInstanced(*this, arrowRenderable_);
-    renderer_.drawInstanced(*this, arrowNormalLineRenderable_);
-
-
-    // glDrawElementsInstanced(
-    //     GL_LINES, 
-    //     arrowNormalLineIndexCount_, 
-    //     GL_UNSIGNED_SHORT, 
-    //     reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_) * sizeof(GLushort)), 
-    //     1);
-
-    renderer_.drawInstanced(*this, planeRenderable_);
-    // glDrawElementsInstanced(
-    //     GL_LINES,
-    //     planeNormalLineIndexCount_,
-    //     GL_UNSIGNED_SHORT,
-    //     reinterpret_cast<void*>(
-    //         (cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_ + arrowNormalLineIndexCount_) * sizeof(GLushort)
-    //     ),
-    //     1
-    // );
-    GLenum err = glGetError();
-    if (err != GL_NO_ERROR) {
-        std::cerr << "OpenGL error after draw: 0x" << std::hex << err << std::dec << "\n";
-    }    
+    glUniformMatrix4fv(uniformViewMatrixLocation_, 1, GL_FALSE, &frame.viewMatrix[0][0]);
+    glUniformMatrix4fv(uniformProjectionMatrixLocation_, 1, GL_FALSE, &frame.projectionMatrix[0][0]);
 }
 
 void GLWindow::getUniformLocationInShaderForProgram(GLuint program){
