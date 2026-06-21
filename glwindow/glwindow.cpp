@@ -208,6 +208,7 @@ void GLWindow::sendDataToOpengl(){
     planeRenderable_ = Renderable{&planeMesh_, planeModelMatrixBufferId_, 1};
     arrowNormalLineRenderable_ = Renderable{&arrowNormalLineMesh_, arrowModelMatrixBufferId_, kSceneArrowCount};
     planeNormalLineRenderable_ = Renderable{&planeNormalLineMesh_, planeModelMatrixBufferId_, 1};
+    initializeRenderItems();
 
     cube.release();
     arrow.release();
@@ -258,17 +259,6 @@ void GLWindow::configVao(GLuint vaoId, GLuint vboId, GLuint indexBufferId){
 
 }
 
-void GLWindow::bindFullTransformMartixToVao(GLuint vaoId, GLuint bufferId){
-    glBindVertexArray(vaoId);
-
-    glBindBuffer(GL_ARRAY_BUFFER, bufferId);
-    for(size_t i = 0; i<4;++i){
-        glVertexAttribPointer(i+3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(float)*i*4));
-        glEnableVertexAttribArray(i+3);
-        glVertexAttribDivisor(i+3, 1);
-    }
-}
-
 void GLWindow::bindModelMatrixToVao(GLuint vaoId, GLuint bufferId){
     glBindVertexArray(vaoId);
 
@@ -284,33 +274,6 @@ void GLWindow::mouseMoveEvent(QMouseEvent *event){
     glm::vec2 mousePosition = glm::vec2(event->x(), event->y());
     camera_.mousePositionUpdated(mousePosition);
     update();
-}
-
-void GLWindow::updateFullTransformMatrix(){
-    mat4 projectMartix = glm::perspective(glm::radians(90.0f),(float)width()/height(),0.1f,20.0f);
-    mat4 worldToViewMartix = camera_.getWorldToViewMartix();
-
-    mat4 fullTransformMartices[] = {
-        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(-2.8f,0.0f,-6.5f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f)),
-        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(2.8f,0.0f,-6.75f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(-1.0f,1.0f,0.0f)),
-    };
-    glBindBuffer(GL_ARRAY_BUFFER, cubeFullTransformMartixBufferId_);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4)*2, fullTransformMartices);
-
-    mat4 arrowFullTransformMartices[] = {
-        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(-1.0f,-1.0f,-5.5f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f)) *glm::scale(mat4(1.0f), glm::vec3(0.5f)),
-    };
-
-    glBindBuffer(GL_ARRAY_BUFFER, arrowFullTransformMartixBufferId_);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), arrowFullTransformMartices);
-
-
-    mat4 planeFullTransformMartices[] = {
-        projectMartix * worldToViewMartix * glm::translate(mat4(1.0f),glm::vec3(-1.0f,-1.3f,-3.0f))*glm::rotate(mat4(1.0f),glm::radians(0.0f),glm::vec3(1.0f,0.0f,0.0f)),
-    };
-
-    glBindBuffer(GL_ARRAY_BUFFER, planeFullTransformMartixBufferId_);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), planeFullTransformMartices);
 }
 
 void GLWindow::updateModelMatrix(){
@@ -437,21 +400,9 @@ void GLWindow::paintGL()
     };
     updateModelMatrix();
 
-    //draw light
-    useSolidColorMaterial(frame);
-    renderer_.drawInstanced(*this, lightRenderable_);
-
-    //draw cube
-    useLightingMaterial(frame);
-    renderer_.drawInstanced(*this, cubeRenderable_);
-
-    //draw arrow
-    renderer_.drawInstanced(*this, arrowRenderable_);
-    renderer_.drawInstanced(*this, arrowNormalLineRenderable_);
-
-    //draw plane
-    renderer_.drawInstanced(*this, planeRenderable_);
-    renderer_.drawInstanced(*this, planeNormalLineRenderable_);
+    for (const RenderItem& item : renderItems_) {
+        drawRenderItem(item, frame);
+    }
 
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
@@ -478,6 +429,36 @@ void GLWindow::useLightingMaterial(const FrameUniforms& frame)
     lightingShader_.setVec3(*this, "viewPositionWorld", frame.viewPositionWorld);
     lightingShader_.setMat4(*this, "viewMatrix", frame.viewMatrix);
     lightingShader_.setMat4(*this, "projectionMatrix", frame.projectionMatrix);
+}
+
+void GLWindow::initializeRenderItems()
+{
+    renderItems_ = {
+        RenderItem{MaterialType::SolidColor, &lightRenderable_},
+        RenderItem{MaterialType::Lighting, &cubeRenderable_},
+        RenderItem{MaterialType::Lighting, &arrowRenderable_},
+        RenderItem{MaterialType::Lighting, &arrowNormalLineRenderable_},
+        RenderItem{MaterialType::Lighting, &planeRenderable_},
+        RenderItem{MaterialType::Lighting, &planeNormalLineRenderable_},
+    };
+}
+
+void GLWindow::drawRenderItem(const RenderItem& item, const FrameUniforms& frame)
+{
+    if (item.renderable == nullptr) {
+        return;
+    }
+
+    switch (item.materialType) {
+        case MaterialType::SolidColor:
+            useSolidColorMaterial(frame);
+            break;
+        case MaterialType::Lighting:
+            useLightingMaterial(frame);
+            break;
+    }
+
+    renderer_.drawInstanced(*this, *item.renderable);
 }
 
 QString GLWindow::readShaderCode(const QString& path)

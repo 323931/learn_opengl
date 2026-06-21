@@ -10,6 +10,8 @@
 #include <renderer.h>
 #include <shaderprogram.h>
 
+#include <vector>
+
 class QKeyEvent;
 class QMouseEvent;
 
@@ -30,6 +32,16 @@ struct FrameUniforms {
     glm::mat4 viewMatrix = glm::mat4(1.0f);
     glm::mat4 projectionMatrix = glm::mat4(1.0f);
     glm::vec3 viewPositionWorld = glm::vec3(0.0f);
+};
+
+enum class MaterialType {
+    SolidColor,
+    Lighting
+};
+
+struct RenderItem {
+    MaterialType materialType = MaterialType::Lighting;
+    const Renderable* renderable = nullptr;
 };
 
 class GLWindow : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
@@ -54,14 +66,14 @@ protected:
 
 private:
     void configVao(GLuint vaoId, GLuint vboId, GLuint indexBufferId);
-    void bindFullTransformMartixToVao(GLuint vaoId, GLuint bufferId);
-    void updateFullTransformMatrix();
     void bindModelMatrixToVao(GLuint vaoId, GLuint bufferId);
     void updateModelMatrix();
     void installShaders();
     QString readShaderCode(const QString& path);
     void useSolidColorMaterial(const FrameUniforms& frame);
     void useLightingMaterial(const FrameUniforms& frame);
+    void initializeRenderItems();
+    void drawRenderItem(const RenderItem& item, const FrameUniforms& frame);
 
     //cube 
     GLuint cubeVaoId_ = 0;
@@ -114,6 +126,7 @@ private:
     Renderable planeRenderable_;
     Renderable arrowNormalLineRenderable_;
     Renderable planeNormalLineRenderable_;
+    std::vector<RenderItem> renderItems_;
     Camera camera_;
     SceneLighting lighting_;
 };
