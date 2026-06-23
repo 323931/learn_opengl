@@ -8,8 +8,16 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 using glm::vec3;
+
+namespace {
+std::string makeObjVertexKey(const std::vector<int>& indices)
+{
+    return std::to_string(indices[0]) + "/" + std::to_string(indices[1]) + "/" + std::to_string(indices[2]);
+}
+}
 
 glm::vec3 normalFromTriangle(
     const glm::vec3& a,
@@ -328,8 +336,14 @@ ShapeData ShapeGenerator::loadModel(const std::string &path,float scale){
         return res;
     }
 
+    std::vector<glm::vec3> positions;
+    std::vector<glm::vec2> texCoords;
+    std::vector<glm::vec3> normals;
+
     std::vector<Vertex> vertices;
     std::vector<GLushort> indices;
+    std::unordered_map<std::string, int> indexMap;
+    bool hasObjNormals = false;
 
     std::string line;
     while(std::getline(file,line)){
@@ -341,22 +355,62 @@ ShapeData ShapeGenerator::loadModel(const std::string &path,float scale){
         if(type == "v"){
             float x,y,z;
             lineStream >>x >>y >>z;
-            Vertex vertex;
-            vertex.position = glm::vec3(x,y,z) * scale;
-            vertex.color = randomColor();
-            vertices.push_back(vertex);
+            positions.emplace_back(glm::vec3(x,y,z) * scale);
+        }
+        if(type == "vt"){
+            float u,v;
+            lineStream >>u >>v;
+            texCoords.emplace_back(glm::vec2(u,v));
+        }
+        if(type == "vn"){
+            float x,y,z;
+            lineStream >>x >>y >>z;
+            normals.emplace_back(normalize(glm::vec3(x,y,z)));
         }
 
         if(type == "f"){
-            std::string v1,v2,v3;
-            lineStream >>v1 >>v2 >>v3;
-            indices.push_back(parseObjVertexIndex(v1));
-            indices.push_back(parseObjVertexIndex(v2));
-            indices.push_back(parseObjVertexIndex(v3));
+            std::vector<GLushort> faceIndices;
+            std::string faceToken;
+
+            while(lineStream >> faceToken){
+                const std::vector<int> objIndices = parseObjVertexIndex(faceToken);
+                const std::string vertexKey = makeObjVertexKey(objIndices);
+
+                if(indexMap.find(vertexKey) == indexMap.end()){
+                    Vertex vertex;
+
+                    if(objIndices[0] >= 0 && objIndices[0] < static_cast<int>(positions.size())){
+                        vertex.position = positions[objIndices[0]];
+                    }
+
+                    if(objIndices[1] >= 0 && objIndices[1] < static_cast<int>(texCoords.size())){
+                        vertex.texCoord = texCoords[objIndices[1]];
+                    }
+
+                    if(objIndices[2] >= 0 && objIndices[2] < static_cast<int>(normals.size())){
+                        vertex.normal = normals[objIndices[2]];
+                        hasObjNormals = true;
+                    }
+
+                    vertex.color = glm::vec3(1.0f);
+                    vertices.emplace_back(vertex);
+                    indexMap[vertexKey] = static_cast<int>(vertices.size() - 1);
+                }
+
+                faceIndices.push_back(static_cast<GLushort>(indexMap[vertexKey]));
+            }
+
+            for(size_t i = 1; i + 1 < faceIndices.size(); ++i){
+                indices.push_back(faceIndices[0]);
+                indices.push_back(faceIndices[i]);
+                indices.push_back(faceIndices[i + 1]);
+            }
         }
     }
 
-    calculateSmoothNormals(vertices, indices);
+    if(!hasObjNormals){
+        calculateSmoothNormals(vertices, indices);
+    }
 
     res.vertex_num= vertices.size();
     res.vertices = new Vertex[res.vertex_num];
@@ -369,13 +423,30 @@ ShapeData ShapeGenerator::loadModel(const std::string &path,float scale){
     return res;
 }
 
-//parseObjVertexIndex("12/8/3") -> 11
-//parseObjVertexIndex("12//3") -> 11
-GLushort ShapeGenerator::parseObjVertexIndex(const std::string &faceToken){
-    const size_t slashPosition = faceToken.find('/');
-    const std::string vertexIndexText = faceToken.substr(0, slashPosition);
-    const int objIndex = std::stoi(vertexIndexText);
-    return static_cast<GLushort>(objIndex - 1);
+//parseObjVertexIndex("12/8/3") -> {11, 7, 2}
+//parseObjVertexIndex("12//3") -> {11, -1, 2}
+//parseObjVertexIndex("12/8") -> {11, 7, -1}
+//parseObjVertexIndex("12") -> {11, -1, -1}
+std::vector<int> ShapeGenerator::parseObjVertexIndex(const std::string &faceToken){
+    std::vector<int> res(3, -1);
+    size_t componentStart = 0;
+
+    for(size_t componentIndex = 0; componentIndex < res.size(); ++componentIndex){
+        const size_t slashPosition = faceToken.find('/', componentStart);
+        const std::string indexText = faceToken.substr(componentStart, slashPosition - componentStart);
+
+        if(!indexText.empty()){
+            res[componentIndex] = std::stoi(indexText) - 1;
+        }
+
+        if(slashPosition == std::string::npos){
+            break;
+        }
+
+        componentStart = slashPosition + 1;
+    }
+
+    return res;
 }
 
 ShapeData ShapeGenerator::createNormalLine(const ShapeData& shapeData){

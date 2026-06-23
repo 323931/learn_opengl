@@ -2,6 +2,7 @@
 #include "shapedata.h"
 #include <qshareddata.h>
 #include <string>
+#include <vector>
 
 class ShapeGenerator{
 public:
@@ -14,7 +15,7 @@ public:
     static void makePlaneVertex(ShapeData& data,int dimension);
 
     static ShapeData loadModel(const std::string& path,float scale = 1.0f);
-    static GLushort parseObjVertexIndex(const std::string& faceToken);
+    static std::vector<int> parseObjVertexIndex(const std::string& faceToken);
 
     static ShapeData createNormalLine(const ShapeData& shapeData);
 };

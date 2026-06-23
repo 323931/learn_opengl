@@ -1,10 +1,11 @@
 #include "renderer.h"
 
 #include <glm/glm.hpp>
+#include <iostream>
 
 void Renderer::drawInstanced(QOpenGLFunctions_3_3_Core& gl, const Renderable& renderable) const
 {
-    if (renderable.mesh == nullptr) {
+    if (!validateRenderable(gl, renderable)) {
         return;
     }
 
@@ -25,4 +26,37 @@ void Renderer::drawInstanced(QOpenGLFunctions_3_3_Core& gl, const Renderable& re
                                mesh.indexType,
                                mesh.indexOffset,
                                renderable.instanceCount);
+}
+
+bool Renderer::validateRenderable(QOpenGLFunctions_3_3_Core& gl, const Renderable& renderable) const
+{
+    if (renderable.mesh == nullptr) {
+        std::cerr << "Skip draw: renderable.mesh is null\n";
+        return false;
+    }
+
+    const GpuMesh& mesh = *renderable.mesh;
+
+    if (mesh.vaoId == 0 || !gl.glIsVertexArray(mesh.vaoId)) {
+        std::cerr << "Skip draw: invalid VAO id " << mesh.vaoId << "\n";
+        return false;
+    }
+
+    if (renderable.modelMatrixBufferId == 0 || !gl.glIsBuffer(renderable.modelMatrixBufferId)) {
+        std::cerr << "Skip draw: invalid model matrix buffer id "
+                  << renderable.modelMatrixBufferId << "\n";
+        return false;
+    }
+
+    if (mesh.indexCount <= 0) {
+        std::cerr << "Skip draw: indexCount is " << mesh.indexCount << "\n";
+        return false;
+    }
+
+    if (renderable.instanceCount <= 0) {
+        std::cerr << "Skip draw: instanceCount is " << renderable.instanceCount << "\n";
+        return false;
+    }
+
+    return true;
 }

@@ -20,4 +20,7 @@ struct Renderable {
 class Renderer {
 public:
     void drawInstanced(QOpenGLFunctions_3_3_Core& gl, const Renderable& renderable) const;
+
+private:
+    bool validateRenderable(QOpenGLFunctions_3_3_Core& gl, const Renderable& renderable) const;
 };

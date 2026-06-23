@@ -83,6 +83,10 @@ private:
     //plane normal line
     GLuint planeNormalLineIndexCount_ = 0;
 
+    //teapot
+    GLuint teapotVaoId_ = 0;
+    GLuint teapotModelMatrixBufferId_ = 0;
+    GLuint teapotIndexCount_ = 0;
     //只用一个缓存区来存cube和arrow
     GLuint totalVboId_ = 0;
     GLuint totalIndexBufferId_ = 0;
@@ -107,12 +111,14 @@ private:
     GpuMesh planeMesh_;
     GpuMesh arrowNormalLineMesh_;
     GpuMesh planeNormalLineMesh_;
+    GpuMesh teapotMesh_;
     Renderable lightRenderable_;
     Renderable cubeRenderable_;
     Renderable arrowRenderable_;
     Renderable planeRenderable_;
     Renderable arrowNormalLineRenderable_;
     Renderable planeNormalLineRenderable_;
+    Renderable teapotRenderable_;
     std::vector<RenderItem> renderItems_;
     Camera camera_;
     SceneLighting lighting_;

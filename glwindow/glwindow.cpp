@@ -53,21 +53,25 @@ void GLWindow::sendDataToOpengl(){
     ShapeData plane = ShapeGenerator::createPlane(32);
     ShapeData arrowNormalLine = ShapeGenerator::createNormalLine(arrow);
     ShapeData planeNormalLine = ShapeGenerator::createNormalLine(plane);
+    ShapeData teapot = ShapeGenerator::loadModel("models/teapot.obj", 0.05f);
+
 
     cubeIndexCount_ = cube.index_num;
     arrowIndexCount_ = arrow.index_num;
     planeIndexCount_ = plane.index_num;
     arrowNormalLineIndexCount_ = arrowNormalLine.index_num;
     planeNormalLineIndexCount_ = planeNormalLine.index_num;
+    teapotIndexCount_ = teapot.index_num;
 
     const GLushort arrowVertexOffset = cube.vertex_num;
     GLushort planeVertexOffset = cube.vertex_num + arrow.vertex_num;
     GLushort arrowNormalLineVertexOffset = cube.vertex_num + arrow.vertex_num + plane.vertex_num;
     GLushort planeNormalLineVertexOffset = cube.vertex_num + arrow.vertex_num + plane.vertex_num + arrowNormalLine.vertex_num;
-
+    GLushort teapotVertexOffset = cube.vertex_num + arrow.vertex_num + plane.vertex_num + arrowNormalLine.vertex_num + planeNormalLine.vertex_num;
+    
     glGenBuffers(1, &totalVboId_);
     glBindBuffer(GL_ARRAY_BUFFER, totalVboId_);
-    glBufferData(GL_ARRAY_BUFFER, cube.vertices_size()+arrow.vertices_size()+plane.vertices_size()+arrowNormalLine.vertices_size()+planeNormalLine.vertices_size(), nullptr, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, cube.vertices_size()+arrow.vertices_size()+plane.vertices_size()+arrowNormalLine.vertices_size()+planeNormalLine.vertices_size()+teapot.vertices_size(), nullptr, GL_STATIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 
         0, 
         cube.vertices_size(), 
@@ -88,6 +92,10 @@ void GLWindow::sendDataToOpengl(){
         cube.vertices_size()+arrow.vertices_size()+plane.vertices_size()+arrowNormalLine.vertices_size(), 
         planeNormalLine.vertices_size(), 
         planeNormalLine.vertices);
+    glBufferSubData(GL_ARRAY_BUFFER, 
+        cube.vertices_size()+arrow.vertices_size()+plane.vertices_size()+arrowNormalLine.vertices_size()+planeNormalLine.vertices_size(), 
+        teapot.vertices_size(), 
+        teapot.vertices);
 
 
     std::vector<GLushort> arrowIndices;
@@ -114,9 +122,18 @@ void GLWindow::sendDataToOpengl(){
         planeNormalLineIndices.push_back(planeNormalLine.indices[i] + planeNormalLineVertexOffset);
     }
 
+    std::vector<GLushort> teapotIndices;
+    teapotIndices.reserve(teapot.index_num);
+    for(int i = 0;i<teapot.index_num;++i){
+        teapotIndices.push_back(teapot.indices[i] + teapotVertexOffset);
+    }
+
     glGenBuffers(1, &totalIndexBufferId_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, totalIndexBufferId_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, cube.indices_size()+arrow.indices_size()+plane.indices_size()+arrowNormalLine.indices_size()+planeNormalLine.indices_size(), nullptr, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 
+        cube.indices_size()+arrow.indices_size()+plane.indices_size()+arrowNormalLine.indices_size()+planeNormalLine.indices_size()+teapot.indices_size(),
+        nullptr, 
+        GL_STATIC_DRAW);
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 
         0, 
         cube.indices_size(),
@@ -137,15 +154,20 @@ void GLWindow::sendDataToOpengl(){
         cube.indices_size()+arrow.indices_size()+plane.indices_size()+arrowNormalLine.indices_size(), 
         planeNormalLine.indices_size(), 
         planeNormalLineIndices.data());
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 
+        cube.indices_size()+arrow.indices_size()+plane.indices_size()+arrowNormalLine.indices_size()+planeNormalLine.indices_size(), 
+        teapot.indices_size(), 
+        teapotIndices.data());
 
     glGenVertexArrays(1, &cubeVaoId_);
     glGenVertexArrays(1, &arrowVaoId_);
     glGenVertexArrays(1, &planeVaoId_);
+    glGenVertexArrays(1, &teapotVaoId_);
 
     configVao(cubeVaoId_, totalVboId_, totalIndexBufferId_);
     configVao(arrowVaoId_, totalVboId_, totalIndexBufferId_);
     configVao(planeVaoId_, totalVboId_, totalIndexBufferId_);
-
+    configVao(teapotVaoId_, totalVboId_, totalIndexBufferId_);
     glBindVertexArray(0);
 
     glGenBuffers(1, &cubeModelMatrixBufferId_);
@@ -162,6 +184,10 @@ void GLWindow::sendDataToOpengl(){
 
     glGenBuffers(1, &planeModelMatrixBufferId_);
     glBindBuffer(GL_ARRAY_BUFFER, planeModelMatrixBufferId_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
+
+    glGenBuffers(1, &teapotModelMatrixBufferId_);
+    glBindBuffer(GL_ARRAY_BUFFER, teapotModelMatrixBufferId_);
     glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
 
     cubeMesh_ = GpuMesh{
@@ -201,6 +227,13 @@ void GLWindow::sendDataToOpengl(){
             (cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_ + arrowNormalLineIndexCount_) * sizeof(GLushort)
         )
     };
+    teapotMesh_ = GpuMesh{
+        teapotVaoId_,
+        GL_TRIANGLES,
+        static_cast<GLsizei>(teapotIndexCount_),
+        GL_UNSIGNED_SHORT,
+        reinterpret_cast<void*>((cubeIndexCount_ + arrowIndexCount_ + planeIndexCount_ + arrowNormalLineIndexCount_ + planeNormalLineIndexCount_) * sizeof(GLushort))
+    };
 
     lightRenderable_ = Renderable{&cubeMesh_, lightModelMatrixBufferId_, 1};
     cubeRenderable_ = Renderable{&cubeMesh_, cubeModelMatrixBufferId_, kSceneCubeCount};
@@ -208,6 +241,7 @@ void GLWindow::sendDataToOpengl(){
     planeRenderable_ = Renderable{&planeMesh_, planeModelMatrixBufferId_, 1};
     arrowNormalLineRenderable_ = Renderable{&arrowNormalLineMesh_, arrowModelMatrixBufferId_, kSceneArrowCount};
     planeNormalLineRenderable_ = Renderable{&planeNormalLineMesh_, planeModelMatrixBufferId_, 1};
+    teapotRenderable_ = Renderable{&teapotMesh_, teapotModelMatrixBufferId_, 1};
     initializeRenderItems();
 
     cube.release();
@@ -215,6 +249,7 @@ void GLWindow::sendDataToOpengl(){
     plane.release();
     arrowNormalLine.release();
     planeNormalLine.release();
+    teapot.release();
 }
 
 void GLWindow::sendAnotherTriangle(){
@@ -331,6 +366,13 @@ void GLWindow::updateModelMatrix(){
 
     glBindBuffer(GL_ARRAY_BUFFER, planeModelMatrixBufferId_);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), planeModelMatrices);
+
+    mat4 teapotModelMatrices[] = {
+        glm::translate(mat4(1.0f),glm::vec3(-9.0f,kFloorY + 2.5f,-5.5f))
+            * glm::rotate(mat4(1.0f),glm::radians(35.0f),glm::vec3(0.0f,1.0f,0.0f))
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, teapotModelMatrixBufferId_);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(teapotModelMatrices), teapotModelMatrices);
 }
 
 void GLWindow::keyPressEvent(QKeyEvent *event){
@@ -436,6 +478,7 @@ void GLWindow::initializeRenderItems()
         RenderItem{MaterialType::Lighting, &arrowNormalLineRenderable_},
         RenderItem{MaterialType::TexturedLighting, &planeRenderable_},
         RenderItem{MaterialType::Lighting, &planeNormalLineRenderable_},
+        RenderItem{MaterialType::Lighting, &teapotRenderable_},
     };
 }
 
@@ -498,8 +541,8 @@ GLWindow::~GLWindow(){
     solidColorShader_.destroy(*this);
     groundTexture_.destroy(*this);
 
-    GLuint vaos[] = { cubeVaoId_, arrowVaoId_, planeVaoId_ };
-    glDeleteVertexArrays(3, vaos);
+    GLuint vaos[] = { cubeVaoId_, arrowVaoId_, planeVaoId_, teapotVaoId_ };
+    glDeleteVertexArrays(sizeof(vaos) / sizeof(vaos[0]), vaos);
 
     GLuint buffers[] = {
         cubeVboId_,
@@ -514,7 +557,8 @@ GLWindow::~GLWindow(){
         cubeModelMatrixBufferId_,
         lightModelMatrixBufferId_,
         arrowModelMatrixBufferId_,
-        planeModelMatrixBufferId_
+        planeModelMatrixBufferId_,
+        teapotModelMatrixBufferId_
     };
     glDeleteBuffers(sizeof(buffers) / sizeof(buffers[0]), buffers);
 
