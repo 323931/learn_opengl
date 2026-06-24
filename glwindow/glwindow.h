@@ -1,6 +1,7 @@
 #pragma once
 
 // #include <GL/gl.h>
+#include "texture2d.h"
 #include <GL/gl.h>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions_3_3_Core>
@@ -16,14 +17,9 @@
 class QKeyEvent;
 class QMouseEvent;
 
-enum class MaterialType {
-    SolidColor,
-    Lighting,
-    TexturedLighting
-};
 
 struct RenderItem {
-    MaterialType materialType = MaterialType::Lighting;
+    Material* material = nullptr;
     const Renderable* renderable = nullptr;
 };
 
@@ -101,10 +97,17 @@ private:
 private:
     ShaderProgram lightingShader_;
     ShaderProgram solidColorShader_;
+
+    //materials
     SolidColorMaterial solidColorMaterial_;
     LightingMaterial lightingMaterial_;
-    LightingMaterial texturedLightingMaterial_;
+    LightingMaterial planeTexturedLightingMaterial_;
+    LightingMaterial cubeTexturedLightingMaterial_;
+    
+    //textures
     Texture2D groundTexture_;
+    Texture2D cubeTexture_;
+
     Renderer renderer_;
     GpuMesh cubeMesh_;
     GpuMesh arrowMesh_;

@@ -463,28 +463,38 @@ void GLWindow::initializeMaterials()
     lightingMaterial_.shader = &lightingShader_;
     lightingMaterial_.lighting = &lighting_;
 
-    texturedLightingMaterial_.shader = &lightingShader_;
-    texturedLightingMaterial_.lighting = &lighting_;
-    texturedLightingMaterial_.diffuseTexture = &groundTexture_;
-    texturedLightingMaterial_.useDiffuseTexture = true;
+    planeTexturedLightingMaterial_.shader = &lightingShader_;
+    planeTexturedLightingMaterial_.lighting = &lighting_;
+    planeTexturedLightingMaterial_.diffuseTexture = &groundTexture_;
+    planeTexturedLightingMaterial_.useDiffuseTexture = true;
+
+    cubeTexturedLightingMaterial_.shader = &lightingShader_;
+    cubeTexturedLightingMaterial_.lighting = &lighting_;
+    cubeTexturedLightingMaterial_.diffuseTexture = &cubeTexture_;
+    cubeTexturedLightingMaterial_.useDiffuseTexture = true;
 }
 
 void GLWindow::initializeRenderItems()
 {
     renderItems_ = {
-        RenderItem{MaterialType::SolidColor, &lightRenderable_},
-        RenderItem{MaterialType::Lighting, &cubeRenderable_},
-        RenderItem{MaterialType::Lighting, &arrowRenderable_},
-        RenderItem{MaterialType::Lighting, &arrowNormalLineRenderable_},
-        RenderItem{MaterialType::TexturedLighting, &planeRenderable_},
-        RenderItem{MaterialType::Lighting, &planeNormalLineRenderable_},
-        RenderItem{MaterialType::Lighting, &teapotRenderable_},
+        RenderItem{&solidColorMaterial_, &lightRenderable_},
+        RenderItem{&cubeTexturedLightingMaterial_, &cubeRenderable_},
+        RenderItem{&lightingMaterial_, &arrowRenderable_},
+        RenderItem{&lightingMaterial_, &arrowNormalLineRenderable_},
+        RenderItem{&planeTexturedLightingMaterial_, &planeRenderable_},
+        RenderItem{&lightingMaterial_, &planeNormalLineRenderable_},
+        RenderItem{&lightingMaterial_, &teapotRenderable_},
     };
 }
 
 void GLWindow::loadTextures()
 {
-    groundTexture_.load(*this, ":/assets/textures/Ground037_1K-JPG_Color.jpg");
+    if(!groundTexture_.load(*this, ":/assets/textures/Ground037_1K-JPG_Color.jpg")){
+        std::cerr << "Failed to load ground texture\n";
+    }
+    if(!cubeTexture_.load(*this, ":/assets/textures/container.jpg")){
+        std::cerr << "Failed to load cube texture\n";
+    }
 }
 
 void GLWindow::drawRenderItem(const RenderItem& item, const FrameUniforms& frame)
@@ -493,16 +503,12 @@ void GLWindow::drawRenderItem(const RenderItem& item, const FrameUniforms& frame
         return;
     }
 
-    switch (item.materialType) {
-        case MaterialType::SolidColor:
-            solidColorMaterial_.use(*this, frame);
-            break;
-        case MaterialType::Lighting:
-            lightingMaterial_.use(*this, frame);
-            break;
-        case MaterialType::TexturedLighting:
-            texturedLightingMaterial_.use(*this, frame);
-            break;
+    if (item.material == nullptr) {
+        return;
+    }
+
+    if(!item.material->use(*this, frame)){
+        return;
     }
 
     renderer_.drawInstanced(*this, *item.renderable);
@@ -540,6 +546,7 @@ GLWindow::~GLWindow(){
     lightingShader_.destroy(*this);
     solidColorShader_.destroy(*this);
     groundTexture_.destroy(*this);
+    cubeTexture_.destroy(*this);
 
     GLuint vaos[] = { cubeVaoId_, arrowVaoId_, planeVaoId_, teapotVaoId_ };
     glDeleteVertexArrays(sizeof(vaos) / sizeof(vaos[0]), vaos);

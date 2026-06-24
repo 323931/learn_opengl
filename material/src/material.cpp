@@ -1,20 +1,21 @@
 #include "material.h"
 
-void SolidColorMaterial::use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& frame) const
+bool SolidColorMaterial::use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& frame) const
 {
     if (shader == nullptr) {
-        return;
+        return false;
     }
 
     shader->use(gl);
     shader->setMat4(gl, "viewMatrix", frame.viewMatrix);
     shader->setMat4(gl, "projectionMatrix", frame.projectionMatrix);
+    return true;
 }
 
-void LightingMaterial::use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& frame) const
+bool LightingMaterial::use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& frame) const
 {
     if (shader == nullptr || lighting == nullptr) {
-        return;
+        return false;
     }
 
     shader->use(gl);
@@ -34,4 +35,6 @@ void LightingMaterial::use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& f
         diffuseTexture->bind(gl, 0);
         shader->setInt(gl, "diffuseTexture", 0);
     }
+
+    return true;
 }

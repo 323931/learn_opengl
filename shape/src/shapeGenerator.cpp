@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <vector>
 using glm::vec3;
-
+using glm::vec2;
 namespace {
 std::string makeObjVertexKey(const std::vector<int>& indices)
 {
@@ -123,40 +123,40 @@ ShapeData ShapeGenerator::createCube(){
 
     std::vector<Vertex> myVertices = {
         // Top (0-3)
-        Vertex(vec3(-1.0f,+1.0f,+1.0f),vec3(+1.0f,+0.0f,+0.0f),topNormal),
-        Vertex(vec3(+1.0f,+1.0f,+1.0f),vec3(+0.0f,+1.0f,+0.0f),topNormal),
-        Vertex(vec3(+1.0f,+1.0f,-1.0f),vec3(+0.0f,+0.0f,+1.0f),topNormal),
-        Vertex(vec3(-1.0f,+1.0f,-1.0f),vec3(+1.0f,+1.0f,+1.0f),topNormal),
+        Vertex(vec3(-1.0f,+1.0f,+1.0f),vec3(+1.0f,+0.0f,+0.0f),topNormal,vec2(0.0f,1.0f)),
+        Vertex(vec3(+1.0f,+1.0f,+1.0f),vec3(+0.0f,+1.0f,+0.0f),topNormal,vec2(1.0f,1.0f)),
+        Vertex(vec3(+1.0f,+1.0f,-1.0f),vec3(+0.0f,+0.0f,+1.0f),topNormal,vec2(1.0f,0.0f)),
+        Vertex(vec3(-1.0f,+1.0f,-1.0f),vec3(+1.0f,+1.0f,+1.0f),topNormal,vec2(0.0f,0.0f)),
 
         // Front (4-7)
-        Vertex(vec3(-1.0f,+1.0f,-1.0f),vec3(+1.0f,+0.0f,+1.0f),frontNormal),
-        Vertex(vec3(+1.0f,+1.0f,-1.0f),vec3(+0.0f,+0.5f,+0.2f),frontNormal),
-        Vertex(vec3(+1.0f,-1.0f,-1.0f),vec3(+0.8f,+0.6f,+0.4f),frontNormal),
-        Vertex(vec3(-1.0f,-1.0f,-1.0f),vec3(+0.3f,+1.0f,+0.5f),frontNormal),
+        Vertex(vec3(-1.0f,+1.0f,-1.0f),vec3(+1.0f,+0.0f,+1.0f),frontNormal,vec2(0.0f,1.0f)),
+        Vertex(vec3(+1.0f,+1.0f,-1.0f),vec3(+0.0f,+0.5f,+0.2f),frontNormal,vec2(1.0f,1.0f)),
+        Vertex(vec3(+1.0f,-1.0f,-1.0f),vec3(+0.8f,+0.6f,+0.4f),frontNormal,vec2(1.0f,0.0f)),
+        Vertex(vec3(-1.0f,-1.0f,-1.0f),vec3(+0.3f,+1.0f,+0.5f),frontNormal,vec2(0.0f,0.0f)),
 
         // Right (8-11)
-        Vertex(vec3(+1.0f,+1.0f,-1.0f),vec3(+0.2f,+0.5f,+0.2f),rightNormal),
-        Vertex(vec3(+1.0f,+1.0f,+1.0f),vec3(+0.9f,+0.3f,+0.7f),rightNormal),
-        Vertex(vec3(+1.0f,-1.0f,+1.0f),vec3(+0.3f,+0.7f,+0.5f),rightNormal),
-        Vertex(vec3(+1.0f,-1.0f,-1.0f),vec3(+0.5f,+0.7f,+0.5f),rightNormal),
+        Vertex(vec3(+1.0f,+1.0f,-1.0f),vec3(+0.2f,+0.5f,+0.2f),rightNormal,vec2(0.0f,1.0f)),
+        Vertex(vec3(+1.0f,+1.0f,+1.0f),vec3(+0.9f,+0.3f,+0.7f),rightNormal,vec2(1.0f,1.0f)),
+        Vertex(vec3(+1.0f,-1.0f,+1.0f),vec3(+0.3f,+0.7f,+0.5f),rightNormal,vec2(1.0f,0.0f)),
+        Vertex(vec3(+1.0f,-1.0f,-1.0f),vec3(+0.5f,+0.7f,+0.5f),rightNormal,vec2(0.0f,0.0f)),
 
         // Left / -X (12-15)
-        Vertex(vec3(-1.0f,+1.0f,+1.0f),vec3(+0.7f,+0.8f,+0.2f),leftNormal),
-        Vertex(vec3(-1.0f,+1.0f,-1.0f),vec3(+0.5f,+0.7f,+0.3f),leftNormal),
-        Vertex(vec3(-1.0f,-1.0f,-1.0f),vec3(+0.4f,+0.7f,+0.7f),leftNormal),
-        Vertex(vec3(-1.0f,-1.0f,+1.0f),vec3(+0.2f,+0.5f,+1.0f),leftNormal),
+        Vertex(vec3(-1.0f,+1.0f,+1.0f),vec3(+0.7f,+0.8f,+0.2f),leftNormal,vec2(0.0f,1.0f)),
+        Vertex(vec3(-1.0f,+1.0f,-1.0f),vec3(+0.5f,+0.7f,+0.3f),leftNormal,vec2(1.0f,1.0f)),
+        Vertex(vec3(-1.0f,-1.0f,-1.0f),vec3(+0.4f,+0.7f,+0.7f),leftNormal,vec2(1.0f,0.0f)),
+        Vertex(vec3(-1.0f,-1.0f,+1.0f),vec3(+0.2f,+0.5f,+1.0f),leftNormal,vec2(0.0f,0.0f)),
 
         // Back / +Z (16-19)
-        Vertex(vec3(+1.0f,+1.0f,+1.0f),vec3(+0.6f,+1.0f,+0.7f),backNormal),
-        Vertex(vec3(-1.0f,+1.0f,+1.0f),vec3(+0.6f,+0.4f,+0.8f),backNormal),
-        Vertex(vec3(-1.0f,-1.0f,+1.0f),vec3(+0.2f,+0.8f,+0.7f),backNormal),
-        Vertex(vec3(+1.0f,-1.0f,+1.0f),vec3(+0.2f,+0.7f,+1.0f),backNormal),
+        Vertex(vec3(+1.0f,+1.0f,+1.0f),vec3(+0.6f,+1.0f,+0.7f),backNormal,vec2(0.0f,1.0f)),
+        Vertex(vec3(-1.0f,+1.0f,+1.0f),vec3(+0.6f,+0.4f,+0.8f),backNormal,vec2(1.0f,1.0f)),
+        Vertex(vec3(-1.0f,-1.0f,+1.0f),vec3(+0.2f,+0.8f,+0.7f),backNormal,vec2(1.0f,0.0f)),
+        Vertex(vec3(+1.0f,-1.0f,+1.0f),vec3(+0.2f,+0.7f,+1.0f),backNormal,vec2(0.0f,0.0f)),
 
         // Bottom (20-23)
-        Vertex(vec3(+1.0f,-1.0f,-1.0f),vec3(+0.8f,+0.3f,+0.7f),bottomNormal),
-        Vertex(vec3(-1.0f,-1.0f,-1.0f),vec3(+0.8f,+0.9f,+0.5f),bottomNormal),
-        Vertex(vec3(-1.0f,-1.0f,+1.0f),vec3(+0.5f,+0.8f,+0.5f),bottomNormal),
-        Vertex(vec3(+1.0f,-1.0f,+1.0f),vec3(+0.9f,+1.0f,+0.2f),bottomNormal),
+        Vertex(vec3(+1.0f,-1.0f,-1.0f),vec3(+0.8f,+0.3f,+0.7f),bottomNormal,vec2(0.0f,1.0f)),
+        Vertex(vec3(-1.0f,-1.0f,-1.0f),vec3(+0.8f,+0.9f,+0.5f),bottomNormal,vec2(1.0f,1.0f)),
+        Vertex(vec3(-1.0f,-1.0f,+1.0f),vec3(+0.5f,+0.8f,+0.5f),bottomNormal,vec2(1.0f,0.0f)),
+        Vertex(vec3(+1.0f,-1.0f,+1.0f),vec3(+0.9f,+1.0f,+0.2f),bottomNormal,vec2(0.0f,0.0f)),
     };
 
     res.vertex_num = myVertices.size();

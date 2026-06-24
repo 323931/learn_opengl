@@ -24,17 +24,25 @@ struct FrameUniforms {
     glm::vec3 viewPositionWorld = glm::vec3(0.0f);
 };
 
-struct SolidColorMaterial {
+class Material {
+public:
     ShaderProgram* shader = nullptr;
-
-    void use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& frame) const;
+    virtual bool use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& frame) const = 0;
+    virtual ~Material() = default;
 };
 
-struct LightingMaterial {
-    ShaderProgram* shader = nullptr;
+
+class SolidColorMaterial : public Material {
+public:
+    ~SolidColorMaterial() override = default;
+    bool use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& frame) const override;
+};
+
+class LightingMaterial : public Material {
+public:
     const SceneLighting* lighting = nullptr;
     const Texture2D* diffuseTexture = nullptr;
     bool useDiffuseTexture = false;
-
-    void use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& frame) const;
+    ~LightingMaterial() override = default;
+    bool use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& frame) const override;
 };

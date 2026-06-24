@@ -4,5 +4,6 @@
         <file>shaders/fragmentshader.frag</file>
         <file>shaders/throughColorFragmentshader.frag</file>
         <file>assets/textures/Ground037_1K-JPG_Color.jpg</file>
+        <file>assets/textures/container.jpg</file>
     </qresource>
 </RCC>
