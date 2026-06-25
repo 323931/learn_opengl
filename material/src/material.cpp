@@ -25,6 +25,7 @@ bool LightingMaterial::use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& f
     shader->setFloat(gl, "lightConstant", lighting->pointLight.constant);
     shader->setFloat(gl, "lightLinear", lighting->pointLight.linear);
     shader->setFloat(gl, "lightQuadratic", lighting->pointLight.quadratic);
+    shader->setFloat(gl, "shininess", shininess);
     shader->setVec3(gl, "viewPositionWorld", frame.viewPositionWorld);
     shader->setMat4(gl, "viewMatrix", frame.viewMatrix);
     shader->setMat4(gl, "projectionMatrix", frame.projectionMatrix);
@@ -34,6 +35,13 @@ bool LightingMaterial::use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& f
     if (hasDiffuseTexture) {
         diffuseTexture->bind(gl, 0);
         shader->setInt(gl, "diffuseTexture", 0);
+    }
+    const bool hasRoughnessTexture =
+        useRoughnessTexture && roughnessTexture != nullptr && roughnessTexture->id() != 0;
+    shader->setInt(gl, "useRoughnessTexture", hasRoughnessTexture ? 1 : 0);
+    if (hasRoughnessTexture) {
+        roughnessTexture->bind(gl, 1);
+        shader->setInt(gl, "roughnessTexture", 1);
     }
 
     return true;

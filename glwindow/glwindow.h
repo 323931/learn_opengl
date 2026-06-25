@@ -107,6 +107,7 @@ private:
     //textures
     Texture2D groundTexture_;
     Texture2D cubeTexture_;
+    Texture2D cubeRoughnessTexture_;
 
     Renderer renderer_;
     GpuMesh cubeMesh_;

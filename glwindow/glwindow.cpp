@@ -466,12 +466,16 @@ void GLWindow::initializeMaterials()
     planeTexturedLightingMaterial_.shader = &lightingShader_;
     planeTexturedLightingMaterial_.lighting = &lighting_;
     planeTexturedLightingMaterial_.diffuseTexture = &groundTexture_;
+    planeTexturedLightingMaterial_.shininess = 32.0f;
     planeTexturedLightingMaterial_.useDiffuseTexture = true;
 
     cubeTexturedLightingMaterial_.shader = &lightingShader_;
     cubeTexturedLightingMaterial_.lighting = &lighting_;
     cubeTexturedLightingMaterial_.diffuseTexture = &cubeTexture_;
+    cubeTexturedLightingMaterial_.roughnessTexture = &cubeRoughnessTexture_;
+    cubeTexturedLightingMaterial_.shininess = 20.0f;
     cubeTexturedLightingMaterial_.useDiffuseTexture = true;
+    cubeTexturedLightingMaterial_.useRoughnessTexture = true;
 }
 
 void GLWindow::initializeRenderItems()
@@ -494,6 +498,9 @@ void GLWindow::loadTextures()
     }
     if(!cubeTexture_.load(*this, ":/assets/textures/container.jpg")){
         std::cerr << "Failed to load cube texture\n";
+    }
+    if(!cubeRoughnessTexture_.load(*this, ":/assets/textures/container_roughness.jpg")){
+        std::cerr << "Failed to load cube roughness texture\n";
     }
 }
 
@@ -547,6 +554,7 @@ GLWindow::~GLWindow(){
     solidColorShader_.destroy(*this);
     groundTexture_.destroy(*this);
     cubeTexture_.destroy(*this);
+    cubeRoughnessTexture_.destroy(*this);
 
     GLuint vaos[] = { cubeVaoId_, arrowVaoId_, planeVaoId_, teapotVaoId_ };
     glDeleteVertexArrays(sizeof(vaos) / sizeof(vaos[0]), vaos);
