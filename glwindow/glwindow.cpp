@@ -186,8 +186,12 @@ void GLWindow::sendDataToOpengl(){
     glBindBuffer(GL_ARRAY_BUFFER, planeModelMatrixBufferId_);
     glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
 
-    glGenBuffers(1, &teapotModelMatrixBufferId_);
-    glBindBuffer(GL_ARRAY_BUFFER, teapotModelMatrixBufferId_);
+    glGenBuffers(1, &smoothTeapotModelMatrixBufferId_);
+    glBindBuffer(GL_ARRAY_BUFFER, smoothTeapotModelMatrixBufferId_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
+
+    glGenBuffers(1, &roughTeapotModelMatrixBufferId_);
+    glBindBuffer(GL_ARRAY_BUFFER, roughTeapotModelMatrixBufferId_);
     glBufferData(GL_ARRAY_BUFFER, sizeof(mat4), nullptr, GL_DYNAMIC_DRAW);
 
     cubeMesh_ = GpuMesh{
@@ -241,7 +245,8 @@ void GLWindow::sendDataToOpengl(){
     planeRenderable_ = Renderable{&planeMesh_, planeModelMatrixBufferId_, 1};
     arrowNormalLineRenderable_ = Renderable{&arrowNormalLineMesh_, arrowModelMatrixBufferId_, kSceneArrowCount};
     planeNormalLineRenderable_ = Renderable{&planeNormalLineMesh_, planeModelMatrixBufferId_, 1};
-    teapotRenderable_ = Renderable{&teapotMesh_, teapotModelMatrixBufferId_, 1};
+    smoothTeapotRenderable_ = Renderable{&teapotMesh_, smoothTeapotModelMatrixBufferId_, 1};
+    roughTeapotRenderable_ = Renderable{&teapotMesh_, roughTeapotModelMatrixBufferId_, 1};
     initializeRenderItems();
 
     cube.release();
@@ -367,12 +372,17 @@ void GLWindow::updateModelMatrix(){
     glBindBuffer(GL_ARRAY_BUFFER, planeModelMatrixBufferId_);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), planeModelMatrices);
 
-    mat4 teapotModelMatrices[] = {
-        glm::translate(mat4(1.0f),glm::vec3(-9.0f,kFloorY + 2.5f,-5.5f))
-            * glm::rotate(mat4(1.0f),glm::radians(35.0f),glm::vec3(0.0f,1.0f,0.0f))
-    };
-    glBindBuffer(GL_ARRAY_BUFFER, teapotModelMatrixBufferId_);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(teapotModelMatrices), teapotModelMatrices);
+    mat4 smoothTeapotModelMatrix =
+        glm::translate(mat4(1.0f),glm::vec3(-10.2f,kFloorY + 2.5f,-5.8f))
+        * glm::rotate(mat4(1.0f),glm::radians(35.0f),glm::vec3(0.0f,1.0f,0.0f));
+    glBindBuffer(GL_ARRAY_BUFFER, smoothTeapotModelMatrixBufferId_);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), &smoothTeapotModelMatrix);
+
+    mat4 roughTeapotModelMatrix =
+        glm::translate(mat4(1.0f),glm::vec3(-5.3f,kFloorY + 2.5f,-5.8f))
+        * glm::rotate(mat4(1.0f),glm::radians(35.0f),glm::vec3(0.0f,1.0f,0.0f));
+    glBindBuffer(GL_ARRAY_BUFFER, roughTeapotModelMatrixBufferId_);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(mat4), &roughTeapotModelMatrix);
 }
 
 void GLWindow::keyPressEvent(QKeyEvent *event){
@@ -462,20 +472,30 @@ void GLWindow::initializeMaterials()
     solidColorMaterial_.shader = &solidColorShader_;
     lightingMaterial_.shader = &lightingShader_;
     lightingMaterial_.lighting = &lighting_;
+    lightingMaterial_.roughness = 0.35f;
 
     planeTexturedLightingMaterial_.shader = &lightingShader_;
     planeTexturedLightingMaterial_.lighting = &lighting_;
     planeTexturedLightingMaterial_.diffuseTexture = &groundTexture_;
-    planeTexturedLightingMaterial_.shininess = 32.0f;
+    planeTexturedLightingMaterial_.roughness = 0.55f;
     planeTexturedLightingMaterial_.useDiffuseTexture = true;
 
     cubeTexturedLightingMaterial_.shader = &lightingShader_;
     cubeTexturedLightingMaterial_.lighting = &lighting_;
     cubeTexturedLightingMaterial_.diffuseTexture = &cubeTexture_;
     cubeTexturedLightingMaterial_.roughnessTexture = &cubeRoughnessTexture_;
-    cubeTexturedLightingMaterial_.shininess = 20.0f;
     cubeTexturedLightingMaterial_.useDiffuseTexture = true;
     cubeTexturedLightingMaterial_.useRoughnessTexture = true;
+
+    smoothTeapotMaterial_.shader = &lightingShader_;
+    smoothTeapotMaterial_.lighting = &lighting_;
+    smoothTeapotMaterial_.roughness = 0.0f;
+    smoothTeapotMaterial_.debugSpecularOnly = true;
+
+    roughTeapotMaterial_.shader = &lightingShader_;
+    roughTeapotMaterial_.lighting = &lighting_;
+    roughTeapotMaterial_.roughness = 1.0f;
+    roughTeapotMaterial_.debugSpecularOnly = true;
 }
 
 void GLWindow::initializeRenderItems()
@@ -486,8 +506,9 @@ void GLWindow::initializeRenderItems()
         RenderItem{&lightingMaterial_, &arrowRenderable_},
         RenderItem{&lightingMaterial_, &arrowNormalLineRenderable_},
         RenderItem{&planeTexturedLightingMaterial_, &planeRenderable_},
-        RenderItem{&lightingMaterial_, &planeNormalLineRenderable_},
-        RenderItem{&lightingMaterial_, &teapotRenderable_},
+        // RenderItem{&lightingMaterial_, &planeNormalLineRenderable_},
+        RenderItem{&smoothTeapotMaterial_, &smoothTeapotRenderable_},
+        RenderItem{&roughTeapotMaterial_, &roughTeapotRenderable_},
     };
 }
 
@@ -573,7 +594,8 @@ GLWindow::~GLWindow(){
         lightModelMatrixBufferId_,
         arrowModelMatrixBufferId_,
         planeModelMatrixBufferId_,
-        teapotModelMatrixBufferId_
+        smoothTeapotModelMatrixBufferId_,
+        roughTeapotModelMatrixBufferId_
     };
     glDeleteBuffers(sizeof(buffers) / sizeof(buffers[0]), buffers);
 

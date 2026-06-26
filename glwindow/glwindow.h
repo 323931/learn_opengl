@@ -81,7 +81,8 @@ private:
 
     //teapot
     GLuint teapotVaoId_ = 0;
-    GLuint teapotModelMatrixBufferId_ = 0;
+    GLuint smoothTeapotModelMatrixBufferId_ = 0;
+    GLuint roughTeapotModelMatrixBufferId_ = 0;
     GLuint teapotIndexCount_ = 0;
     //只用一个缓存区来存cube和arrow
     GLuint totalVboId_ = 0;
@@ -103,6 +104,8 @@ private:
     LightingMaterial lightingMaterial_;
     LightingMaterial planeTexturedLightingMaterial_;
     LightingMaterial cubeTexturedLightingMaterial_;
+    LightingMaterial smoothTeapotMaterial_;
+    LightingMaterial roughTeapotMaterial_;
     
     //textures
     Texture2D groundTexture_;
@@ -122,7 +125,8 @@ private:
     Renderable planeRenderable_;
     Renderable arrowNormalLineRenderable_;
     Renderable planeNormalLineRenderable_;
-    Renderable teapotRenderable_;
+    Renderable smoothTeapotRenderable_;
+    Renderable roughTeapotRenderable_;
     std::vector<RenderItem> renderItems_;
     Camera camera_;
     SceneLighting lighting_;

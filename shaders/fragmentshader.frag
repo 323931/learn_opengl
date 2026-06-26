@@ -15,9 +15,10 @@ uniform vec3 ambientLight;
 uniform vec3 viewPositionWorld;
 uniform sampler2D diffuseTexture;
 uniform bool useDiffuseTexture;
-uniform float shininess;
+uniform float roughnessValue;
 uniform sampler2D roughnessTexture;
 uniform bool useRoughnessTexture;
+uniform bool debugSpecularOnly;
 
 void main()
 {
@@ -29,10 +30,12 @@ void main()
     vec3 lightVertex = normalize(lightPosition - theWorldPosition);
     float diffuse = max(dot(theNormal,lightVertex),0.0);
 
-    // Roughness map: 0 is smooth with a small concentrated highlight;
-    // 1 is rough with a broad soft highlight. shininess is the fallback value.
-    float roughness = useRoughnessTexture ? texture(roughnessTexture, theTexCoord).r : 0.0;
-    float fragmentShininess = useRoughnessTexture ? mix(256.0, 2.0, roughness) : shininess;
+    // Roughness 0 is smooth with a small concentrated highlight;
+    // roughness 1 is rough with a broad soft highlight.
+    float roughness = useRoughnessTexture
+        ? texture(roughnessTexture, theTexCoord).r
+        : roughnessValue;
+    float fragmentShininess = mix(256.0, 2.0, clamp(roughness, 0.0, 1.0));
 
     //the specular
     vec3 reflectLight = normalize(reflect(-lightVertex,theNormal));
@@ -43,12 +46,13 @@ void main()
     vec3 surfaceColor = useDiffuseTexture ? texture(diffuseTexture, theTexCoord).rgb : theVertexColor;
     vec3 ambientColor = surfaceColor * ambientLight;
     vec3 diffuseColor = attenuation * lightColor * surfaceColor * diffuse;
-    vec3 specularColor = attenuation * lightColor * specular;
+    float specularStrength = mix(1.5, 0.15, clamp(roughness, 0.0, 1.0));
+    vec3 specularColor = attenuation * lightColor * specular * specularStrength;
+    // Debug view: remove attenuation and brighten tiny values so the highlight shape is easy to inspect.
+    vec3 specularDebugColor = vec3(pow(specular, 0.25));
 
-    fragColor = vec4(ambientColor + diffuseColor + specularColor, 1.0);
-    //fragColor = vec4(vec3(roughness),1.0);
-    //fragColor = vec4(
-    //vec3(specular),
-    //1.0
-    //);
+    vec3 color = debugSpecularOnly
+        ? specularDebugColor
+        : ambientColor + diffuseColor + specularColor;
+    fragColor = vec4(color, 1.0);
 }

@@ -41,8 +41,9 @@ public:
 class LightingMaterial : public Material {
 public:
     const SceneLighting* lighting = nullptr;
-    float shininess = 32.0f;
-    //决定表面基础颜色
+    float roughness = 0.25f;
+    bool debugSpecularOnly = false;
+    // 决定表面基础颜色。
     const Texture2D* diffuseTexture = nullptr;
     bool useDiffuseTexture = false;
     // 决定每个位置的表面粗糙程度：黑色更光滑，白色更粗糙。

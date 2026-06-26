@@ -25,7 +25,8 @@ bool LightingMaterial::use(QOpenGLFunctions_3_3_Core& gl, const FrameUniforms& f
     shader->setFloat(gl, "lightConstant", lighting->pointLight.constant);
     shader->setFloat(gl, "lightLinear", lighting->pointLight.linear);
     shader->setFloat(gl, "lightQuadratic", lighting->pointLight.quadratic);
-    shader->setFloat(gl, "shininess", shininess);
+    shader->setFloat(gl, "roughnessValue", roughness);
+    shader->setInt(gl, "debugSpecularOnly", debugSpecularOnly ? 1 : 0);
     shader->setVec3(gl, "viewPositionWorld", frame.viewPositionWorld);
     shader->setMat4(gl, "viewMatrix", frame.viewMatrix);
     shader->setMat4(gl, "projectionMatrix", frame.projectionMatrix);
